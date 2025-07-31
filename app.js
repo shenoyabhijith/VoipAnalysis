@@ -42,6 +42,140 @@ let snapshots = [];
 let availableModels = [];
 let selectedSnapshots = new Set();
 
+// Make snapshots globally accessible for simulation
+window.snapshots = snapshots;
+
+// Add protocol efficiency metrics and call simulation integration
+let currentSimulationData = null;
+let protocolMetrics = {};
+
+function calculateProtocolEfficiency(trafficData, networkType, codec) {
+  const metrics = {
+    totalCalls: 0,
+    totalBandwidth: 0,
+    averageCallDuration: 0,
+    efficiencyScore: 0,
+    protocolType: networkType,
+    codec: codec || 'N/A'
+  };
+
+  // Calculate metrics from traffic data
+  trafficData.forEach(link => {
+    const calls = link.busyHourErlangs;
+    metrics.totalCalls += calls;
+    
+    if (networkType === 'pstn') {
+      metrics.totalBandwidth += link.bandwidthMbps;
+    } else {
+      metrics.totalBandwidth += link.totalBandwidthMbps;
+    }
+  });
+
+  // Calculate efficiency score (calls per Mbps)
+  if (metrics.totalBandwidth > 0) {
+    metrics.efficiencyScore = metrics.totalCalls / metrics.totalBandwidth;
+  }
+
+  // Average call duration (assuming 3 minutes per call)
+  metrics.averageCallDuration = 3; // minutes
+
+  return metrics;
+}
+
+function updateCallSimulation(trafficData, networkType, codec) {
+  // Update call simulation with real traffic data
+  const links = trafficData.map(link => ({
+    name: `${link.from} → ${link.to}`,
+    rate: link.busyHourErlangs,
+    bandwidth: networkType === 'pstn' ? link.bandwidthMbps : link.totalBandwidthMbps,
+    protocol: networkType,
+    codec: codec || 'N/A'
+  }));
+
+  // Store current simulation data
+  currentSimulationData = {
+    links: links,
+    networkType: networkType,
+    codec: codec,
+    timestamp: Date.now()
+  };
+
+  // Update simulation if running
+  if (window.simulationRunning) {
+    window.updateSimulationLinks(links);
+  }
+}
+
+function renderProtocolMetrics(snapshot) {
+  const metrics = calculateProtocolEfficiency(snapshot.trafficData, snapshot.networkType, snapshot.codec);
+  protocolMetrics[snapshot.id] = metrics;
+
+  const metricsHtml = `
+    <div class="protocol-metrics">
+      <h3>📊 Protocol Efficiency Metrics</h3>
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-value">${metrics.totalCalls.toFixed(1)}</div>
+          <div class="metric-label">Total Calls (Erlangs)</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value">${metrics.totalBandwidth.toFixed(2)}</div>
+          <div class="metric-label">Total Bandwidth (Mbps)</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value">${metrics.efficiencyScore.toFixed(2)}</div>
+          <div class="metric-label">Efficiency (Calls/Mbps)</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value">${metrics.protocolType.toUpperCase()}</div>
+          <div class="metric-label">Protocol Type</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value">${metrics.codec.toUpperCase()}</div>
+          <div class="metric-label">Codec</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value">${metrics.averageCallDuration} min</div>
+          <div class="metric-label">Avg Call Duration</div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  return metricsHtml;
+}
+
+function renderCallSimulationSection(snapshot) {
+  const simulationHtml = `
+    <div class="call-simulation-section">
+      <h3>📞 Real-Time Call Simulation</h3>
+      <div class="simulation-controls">
+        <button id="startSim-${snapshot.id}" class="sim-btn start-btn">Start Simulation</button>
+        <button id="stopSim-${snapshot.id}" class="sim-btn stop-btn" disabled>Stop Simulation</button>
+      </div>
+      <div class="simulation-metrics">
+        <div class="sim-metric">
+          <span class="metric-label">Active Calls:</span>
+          <span id="activeCalls-${snapshot.id}" class="metric-value">0</span>
+        </div>
+        <div class="sim-metric">
+          <span class="metric-label">Call Rate:</span>
+          <span id="callRate-${snapshot.id}" class="metric-value">0 calls/min</span>
+        </div>
+        <div class="sim-metric">
+          <span class="metric-label">Bandwidth Usage:</span>
+          <span id="bandwidthUsage-${snapshot.id}" class="metric-value">0 Mbps</span>
+        </div>
+      </div>
+      <div class="simulation-log" id="simLog-${snapshot.id}">
+        <div class="log-entry">Ready to start simulation...</div>
+      </div>
+    </div>
+  `;
+
+  return simulationHtml;
+}
+
 // DOM elements
 const networkTypeRadios = document.querySelectorAll('input[name="networkType"]');
 const codecSelect = document.getElementById('codecSelect');
@@ -497,6 +631,9 @@ function runAnalysis() {
   
   snapshots.push(snapshot);
   
+  // Update call simulation with current analysis data
+  updateCallSimulation(trafficData, networkType, codec);
+  
   // Render results
   renderSnapshot(snapshot);
   
@@ -579,6 +716,12 @@ function renderSnapshot(snapshot) {
   
   // Add diagram
   snapshotHtml += renderSvgDiagram(trafficData);
+  
+  // Add protocol efficiency metrics
+  snapshotHtml += renderProtocolMetrics(snapshot);
+  
+  // Add call simulation section
+  snapshotHtml += renderCallSimulationSection(snapshot);
   
   // Add explanation if available
   if (explanation) {
@@ -752,6 +895,11 @@ async function explainResults(snapshotId) {
 }
 
 function clearSnapshots() {
+  // Clear all simulations before clearing snapshots
+  if (window.clearAllSimulations) {
+    window.clearAllSimulations();
+  }
+  
   snapshots = [];
   selectedSnapshots.clear();
   resultsSection.innerHTML = '';
