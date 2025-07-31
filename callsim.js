@@ -30,7 +30,9 @@
       startTime: null,
       bandwidthUsage: 0,
       callRate: 0,
-      links: []
+      links: [],
+      targetCallCount: 0, // Track target call count for consistency
+      linkCallCounts: {} // Track calls per link
     };
 
     // Remove existing event listeners to prevent duplicates
@@ -135,18 +137,23 @@
       addLogEntry(logElement, `  • ${link.name}: ${link.rate.toFixed(2)} calls/min, max ${link.maxConcurrentCalls} calls`, '#9b59b6');
     });
 
-    // Start call generation for each link with dynamic rates and randomness
+    // Start call generation for each link with standardized rates
     links.forEach((link, index) => {
-      const baseInterval = Math.max(100, 1000 / link.rate); // Much faster call generation (min 100ms)
-      console.log(`Setting up dynamic timer for ${link.name} with interval: ${baseInterval}ms (${link.rate} calls/min)`);
+      // Standardize call generation rate across all simulations
+      const standardCallRate = 60; // 60 calls per minute per link (1 call per second)
+      const baseInterval = 1000; // 1 second interval for consistent call generation
+      console.log(`Setting up standardized timer for ${link.name} with interval: ${baseInterval}ms (${standardCallRate} calls/min)`);
       
       const timer = setInterval(() => {
-        // Add randomness to call generation (±30% variation)
-        const randomFactor = 0.7 + Math.random() * 0.6; // 0.7 to 1.3
-        const actualInterval = baseInterval * randomFactor;
+        // Reduced randomness for more consistent call generation
+        const randomFactor = 0.9 + Math.random() * 0.2; // 0.9 to 1.1 (less variation)
         
-        // Randomly decide if we should spawn a call (adds more randomness)
-        if (Math.random() < 0.95) { // 95% chance to spawn (increased from 90%)
+        // Check if we've reached the target call count for this link
+        const currentLinkCalls = data.linkCallCounts[index] || 0;
+        const targetCallsPerLink = 20; // Target 20 calls per link in 20 seconds
+        
+        // Higher spawn probability for more consistent call generation
+        if (Math.random() < 0.98 && currentLinkCalls < targetCallsPerLink) { // 98% chance to spawn, but respect limit
           spawnDynamicCall(snapshotId, link, index);
         }
       }, baseInterval);
@@ -296,6 +303,12 @@
     // Call is accepted
     data.activeCalls++;
     data.totalCalls++;
+    
+    // Track call count for this link
+    if (!data.linkCallCounts[linkIndex]) {
+      data.linkCallCounts[linkIndex] = 0;
+    }
+    data.linkCallCounts[linkIndex]++;
     
     // Add bandwidth randomization (±15% variation)
     const bandwidthVariation = 0.85 + Math.random() * 0.3; // 0.85 to 1.15
