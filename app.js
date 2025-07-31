@@ -241,6 +241,9 @@ function renderCallSimulationSection(snapshot) {
   return simulationHtml;
 }
 
+// Expose function globally for simulation to call
+window.showPostSimulationResults = showPostSimulationResults;
+
 // DOM elements
 const networkTypeRadios = document.querySelectorAll('input[name="networkType"]');
 const codecSelect = document.getElementById('codecSelect');
@@ -700,7 +703,21 @@ function runAnalysis() {
   updateCallSimulation(trafficData, networkType, codec);
   
   // Render results
-  renderSnapshot(snapshot);
+  const snapshotHtml = renderSnapshot(snapshot);
+  
+  // Add snapshot to DOM
+  const snapshotSection = document.createElement('section');
+  snapshotSection.id = `snapshot-${snapshot.id}`;
+  snapshotSection.className = 'snapshot';
+  snapshotSection.innerHTML = snapshotHtml;
+  resultsSection.appendChild(snapshotSection);
+  
+  // Initialize simulation for this snapshot
+  if (window.initializeSimulation) {
+    setTimeout(() => {
+      window.initializeSimulation(snapshot.id);
+    }, 100);
+  }
   
   // Show comparison instructions if this is the first snapshot
   const comparisonInstructions = document.getElementById('comparisonInstructions');
@@ -726,120 +743,81 @@ function runAnalysis() {
 function renderSnapshot(snapshot) {
   const { id, timestamp, networkType, codec, blockingProb, trafficData, explanation, modelUsed } = snapshot;
   
-  // Check if this snapshot is already rendered
-  const existingSnapshot = document.getElementById(`snapshot-${id}`);
-  if (existingSnapshot) {
-    // Update the existing snapshot instead of creating a new one
-    existingSnapshot.innerHTML = '';
-  } else {
-    // Create a new snapshot section
-    const snapshotSection = document.createElement('section');
-    snapshotSection.id = `snapshot-${id}`;
-    snapshotSection.className = 'snapshot';
-    resultsSection.appendChild(snapshotSection);
-  }
-  
-  const snapshotElement = document.getElementById(`snapshot-${id}`);
-  
-  let snapshotHtml = '<div class="snapshot-header">';
-  snapshotHtml += `<input type="checkbox" class="snapshot-checkbox" data-snapshot-id="${id}" ${selectedSnapshots.has(id) ? 'checked' : ''}>`;
-  snapshotHtml += `<h2>${networkType.toUpperCase()} Analysis</h2>`;
-  snapshotHtml += `<span class="timestamp">${timestamp}</span>`;
-  snapshotHtml += '</div>';
-  
-  if (networkType === 'pstn') {
-    // PSTN table
-    const headers = ['From', 'To', 'Daily Minutes', 'Busy Hour Erlangs', 'Required Circuits', 'T-1 Count', 'Bandwidth (Mbps)'];
-    const rows = trafficData.map(link => [
-      link.from,
-      link.to,
-      link.dailyMinutes.toLocaleString(),
-      link.busyHourErlangs.toFixed(2),
-      link.requiredCircuits,
-      link.t1Count,
-      link.bandwidthMbps.toFixed(2)
-    ]);
-    
-    snapshotHtml += renderTable(`pstn-table-${id}`, headers, rows);
-    snapshotHtml += renderSummary(`Blocking Probability: ${blockingProb}`);
-  } else {
-    // VoIP table
-    const headers = ['From', 'To', 'Daily Minutes', 'Busy Hour Erlangs', 'Codec', 'Bandwidth per Call (kbps)', 'Total Bandwidth (Mbps)'];
-    const rows = trafficData.map(link => [
-      link.from,
-      link.to,
-      link.dailyMinutes.toLocaleString(),
-      link.busyHourErlangs.toFixed(2),
-      link.codec.toUpperCase(),
-      link.totalBandwidthPerCall.toFixed(0),
-      link.totalBandwidthMbps.toFixed(2)
-    ]);
-    
-    snapshotHtml += renderTable(`voip-table-${id}`, headers, rows);
-    snapshotHtml += renderSummary(`Codec: ${codec.toUpperCase()}, Blocking Probability: ${blockingProb}`);
-  }
-  
-  // Add diagram
-  snapshotHtml += renderSvgDiagram(trafficData);
-  
-  // Add protocol efficiency metrics
-  snapshotHtml += renderProtocolMetrics(snapshot);
-  
-  // Add call simulation section
-  snapshotHtml += renderCallSimulationSection(snapshot);
-  
-  // Add explanation if available
-  if (explanation) {
-    snapshotHtml += `
-      <div class="explanation-section" id="explanation-${id}">
-        <div class="explanation-header">
-          <h3>AI Explanation (${modelUsed})</h3>
-          <button class="close-explanation" data-snapshot-id="${id}">×</button>
+  // Create initial snapshot with just simulation section
+  let snapshotHtml = `
+    <div class="snapshot" id="snapshot-${id}">
+      <div class="snapshot-header">
+        <h3>${networkType.toUpperCase()} Analysis</h3>
+        <div class="snapshot-meta">
+          <span class="timestamp">${new Date(timestamp).toLocaleString()}</span>
+          <span class="model-used">Model: ${modelUsed}</span>
         </div>
-        <div class="explanation-content">${simpleMarkdownToHtml(explanation)}</div>
+        <div class="snapshot-controls">
+          <label class="checkbox-container">
+            <input type="checkbox" class="snapshot-checkbox" data-snapshot-id="${id}">
+            <span class="checkmark"></span>
+            Select for comparison
+          </label>
+          <button onclick="explainResults('${id}')" class="explain-btn">🤖 Explain Results</button>
+        </div>
       </div>
-    `;
-  }
-  
-  // Add explain button if API key is provided and no explanation exists
-  if (apiKeyInput.value.trim() && !explanation) {
-    snapshotHtml += `<button id="explain-btn-${id}" class="secondary" data-snapshot-id="${id}">Explain Results</button>`;
-  }
-  
-  snapshotElement.innerHTML = snapshotHtml;
-
-  const svg = snapshotElement.querySelector('.diagram-container svg');
-  animateDiagram(svg);
-  fadeIn(snapshotElement);
-  
-  // Add event listener to the explain button
-  const explainBtn = document.getElementById(`explain-btn-${id}`);
-  if (explainBtn) {
-    explainBtn.addEventListener('click', () => explainResults(id));
-  }
-  
-  // Add event listener to close button if explanation exists
-  const closeBtn = document.querySelector(`#explanation-${id} .close-explanation`);
-  if (closeBtn) {
-    closeBtn.addEventListener('click', () => {
-      // Remove explanation from snapshot
-      const snapshotIndex = snapshots.findIndex(s => s.id === id);
-      if (snapshotIndex !== -1) {
-        snapshots[snapshotIndex].explanation = null;
-        snapshots[snapshotIndex].modelUsed = null;
-      }
       
-      // Re-render the snapshot without the explanation
-      renderSnapshot(snapshots[snapshotIndex]);
-    });
-  }
-  
-  // Initialize simulation for this snapshot
-  if (window.initializeSimulation) {
-    setTimeout(() => {
-      window.initializeSimulation(id);
-    }, 100);
-  }
+      <div class="snapshot-content">
+        <div class="analysis-summary">
+          <h4>📋 Analysis Summary</h4>
+          <div class="summary-grid">
+            <div class="summary-item">
+              <span class="summary-label">Network Type:</span>
+              <span class="summary-value">${networkType.toUpperCase()}</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">Codec:</span>
+              <span class="summary-value">${codec ? codec.toUpperCase() : 'N/A'}</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">Blocking Probability:</span>
+              <span class="summary-value">${(blockingProb * 100).toFixed(1)}%</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">Links Analyzed:</span>
+              <span class="summary-value">${trafficData.length}</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Simulation Section (shown first) -->
+        <div id="simulation-section-${id}">
+          ${renderCallSimulationSection(snapshot)}
+        </div>
+        
+        <!-- Protocol Metrics Section (hidden initially) -->
+        <div id="protocol-metrics-section-${id}" style="display: none;">
+          <div class="protocol-metrics-placeholder">
+            <h3>📊 Protocol Efficiency Metrics</h3>
+            <p>Run simulation to calculate efficiency metrics based on actual performance data.</p>
+          </div>
+        </div>
+        
+        <!-- Network Diagram Section (hidden initially) -->
+        <div id="diagram-section-${id}" style="display: none;">
+          <div class="network-diagram-placeholder">
+            <h3>🌐 Network Topology</h3>
+            <p>Run simulation to generate network diagram based on actual traffic patterns.</p>
+          </div>
+        </div>
+        
+        <!-- AI Explanation Section -->
+        <div class="explanation-section">
+          <h4>🤖 AI Analysis</h4>
+          <div class="explanation-content" id="explanation-${id}">
+            ${explanation ? simpleMarkdownToHtml(explanation) : '<p>Click "Explain Results" to get AI analysis.</p>'}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  return snapshotHtml;
 }
 
 async function explainResults(snapshotId) {
@@ -1664,4 +1642,104 @@ function generateComparisonSummary(snapshot1, snapshot2) {
       bandwidthRatio: summary1.totalBandwidth > 0 ? summary2.totalBandwidth / summary1.totalBandwidth : 0
     }
   };
+}
+
+// Function to show protocol metrics and diagram after simulation completes
+function showPostSimulationResults(snapshotId) {
+  const snapshot = snapshots.find(s => s.id === snapshotId);
+  if (!snapshot) return;
+  
+  // Get simulation data
+  const simulationData = window.simulationData[snapshotId];
+  if (!simulationData) return;
+  
+  // Calculate protocol efficiency based on simulation results
+  const simulationMetrics = {
+    totalCalls: simulationData.totalCalls || 0,
+    blockedCalls: simulationData.blockedCalls || 0,
+    activeCalls: simulationData.activeCalls || 0,
+    bandwidthUsage: simulationData.bandwidthUsage || 0,
+    efficiencyScore: simulationData.totalCalls > 0 ? (simulationData.totalCalls / simulationData.bandwidthUsage) : 0,
+    protocolType: snapshot.networkType,
+    codec: snapshot.codec || 'N/A',
+    averageCallDuration: 3 // minutes
+  };
+  
+  // Show protocol metrics section
+  const protocolSection = document.getElementById(`protocol-metrics-section-${snapshotId}`);
+  if (protocolSection) {
+    protocolSection.style.display = 'block';
+    protocolSection.innerHTML = `
+      <div class="protocol-metrics">
+        <h3>📊 Protocol Efficiency Metrics (Simulation Results)</h3>
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-value">${simulationMetrics.totalCalls}</div>
+            <div class="metric-label">Total Calls Attempted</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">${simulationMetrics.blockedCalls}</div>
+            <div class="metric-label">Blocked Calls</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">${((simulationMetrics.blockedCalls / simulationMetrics.totalCalls) * 100).toFixed(1)}%</div>
+            <div class="metric-label">Actual Blocking Rate</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">${simulationMetrics.bandwidthUsage.toFixed(2)}</div>
+            <div class="metric-label">Peak Bandwidth (Mbps)</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">${simulationMetrics.efficiencyScore.toFixed(2)}</div>
+            <div class="metric-label">Efficiency (Calls/Mbps)</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">${simulationMetrics.protocolType.toUpperCase()}</div>
+            <div class="metric-label">Protocol Type</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  
+  // Show network diagram section
+  const diagramSection = document.getElementById(`diagram-section-${snapshotId}`);
+  if (diagramSection) {
+    diagramSection.style.display = 'block';
+    diagramSection.innerHTML = `
+      <div class="network-diagram">
+        <h3>🌐 Network Topology (Based on Simulation)</h3>
+        <div class="diagram-container">
+          ${renderSvgDiagram(snapshot.trafficData)}
+        </div>
+        <div class="simulation-summary">
+          <h4>📈 Simulation Summary</h4>
+          <div class="summary-grid">
+            <div class="summary-item">
+              <span class="summary-label">Links Simulated:</span>
+              <span class="summary-value">${simulationData.links ? simulationData.links.length : 0}</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">Peak Active Calls:</span>
+              <span class="summary-value">${simulationData.peakActiveCalls || 0}</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">Average Call Rate:</span>
+              <span class="summary-value">${simulationData.averageCallRate ? simulationData.averageCallRate.toFixed(1) : 0} calls/min</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">Simulation Duration:</span>
+              <span class="summary-value">10 seconds</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // Animate the diagram
+    const svg = diagramSection.querySelector('.diagram-container svg');
+    if (svg) {
+      animateDiagram(svg);
+    }
+  }
 }

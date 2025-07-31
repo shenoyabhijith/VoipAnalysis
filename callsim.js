@@ -158,6 +158,13 @@
     const autoStopTimer = setTimeout(() => {
       addLogEntry(logElement, '⏰ Simulation completed (10 seconds)', '#f39c12');
       stopSimulation(snapshotId);
+      
+      // Show post-simulation results (protocol metrics and diagram)
+      if (window.showPostSimulationResults) {
+        setTimeout(() => {
+          window.showPostSimulationResults(snapshotId);
+        }, 500);
+      }
     }, 10000); // 10 seconds
     
     window.simulationTimers[`${snapshotId}-autostop`] = autoStopTimer;
