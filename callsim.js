@@ -250,8 +250,9 @@
     const maxCalls = link.maxConcurrentCalls;
     
     // Simulate blocking based on blocking probability
-    const blockingThreshold = maxCalls * (1 - link.blockingProb);
-    const isBlocked = currentActiveCalls >= blockingThreshold;
+    // When at capacity, randomly block calls based on blocking probability
+    const isAtCapacity = currentActiveCalls >= maxCalls;
+    const isBlocked = isAtCapacity && Math.random() < link.blockingProb;
     
     const callId = (link.callId || 0) + 1;
     link.callId = callId;
@@ -259,7 +260,7 @@
     if (isBlocked) {
       // Call is blocked
       data.blockedCalls++;
-      addLogEntry(logElement, `🚫 Call ${callId} BLOCKED: ${link.name} (${currentActiveCalls}/${Math.round(blockingThreshold)} calls, ${(link.blockingProb * 100).toFixed(1)}% blocking)`, '#e74c3c');
+      addLogEntry(logElement, `🚫 Call ${callId} BLOCKED: ${link.name} (${currentActiveCalls}/${maxCalls} capacity, ${(link.blockingProb * 100).toFixed(1)}% blocking)`, '#e74c3c');
       return;
     }
 

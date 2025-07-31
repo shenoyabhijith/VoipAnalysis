@@ -190,8 +190,8 @@ function renderCallSimulationSection(snapshot) {
           <ul>
             <li><strong>Call Rate:</strong> Based on Erlangs × (1 - Blocking Probability)</li>
             <li><strong>Capacity Limit:</strong> ${snapshot.networkType === 'pstn' ? 'T1 circuits (24 channels)' : 'Bandwidth capacity'}</li>
-            <li><strong>Blocking Threshold:</strong> Max calls × (1 - ${(snapshot.blockingProb * 100).toFixed(1)}%)</li>
-            <li><strong>Call Rejection:</strong> When active calls ≥ threshold</li>
+            <li><strong>Blocking Logic:</strong> When at capacity, ${(snapshot.blockingProb * 100).toFixed(1)}% of incoming calls are blocked</li>
+            <li><strong>Call Rejection:</strong> When system reaches maximum capacity</li>
           </ul>
         </div>
       </div>
