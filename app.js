@@ -674,6 +674,14 @@ function updateCompareButton() {
 }
 
 function runAnalysis() {
+  if (window.comparisonMode) {
+    runComparisonAnalysis();
+  } else {
+    runSingleAnalysis();
+  }
+}
+
+function runSingleAnalysis() {
   // Check if we already have 2 snapshots
   if (snapshots.length >= 2) {
     resultsSection.innerHTML = '<div class="error-message">You already have 2 analyses. Please clear existing analyses by clicking the "Clear Snapshots" button before running a new one.</div>';
@@ -759,6 +767,108 @@ function runAnalysis() {
     });
     updateCompareButton();
   }
+  
+  // Scroll to results
+  resultsSection.scrollIntoView({ behavior: 'smooth' });
+}
+
+function runComparisonAnalysis() {
+  if (window.selectedAnalyses.length !== 2) {
+    alert('Please select exactly 2 analyses for comparison');
+    return;
+  }
+
+  // Check for duplicates
+  const [analysis1, analysis2] = window.selectedAnalyses;
+  const isDuplicate = 
+    analysis1.networkType === analysis2.networkType &&
+    analysis1.codec === analysis2.codec &&
+    analysis1.blockingProb === analysis2.blockingProb;
+  
+  if (isDuplicate) {
+    alert('Cannot compare identical configurations. Please select different parameters.');
+    return;
+  }
+
+  // Show loading state
+  const runButton = document.getElementById('runAnalysis');
+  const originalText = runButton.textContent;
+  runButton.textContent = '🔄 Generating Comparison...';
+  runButton.disabled = true;
+
+  // Generate both analyses
+  const newSnapshots = [];
+  
+  window.selectedAnalyses.forEach((formData, index) => {
+    // Validate form data
+    const networkType = formData.networkType;
+    const codec = formData.codec;
+    const blockingProb = formData.blockingProb;
+    
+    if (isNaN(blockingProb) || blockingProb < 0.001 || blockingProb > 0.1) {
+      alert(`Error in analysis ${index + 1}: Invalid blocking probability`);
+      return;
+    }
+
+    // Calculate traffic data
+    const trafficData = calculateTrafficData(networkType, codec, blockingProb);
+    
+    // Create snapshot
+    const timestamp = new Date().toLocaleString();
+    const selectedModel = modelSelect.value || 'No model selected';
+    const snapshot = {
+      id: Date.now() + index + '-' + Math.floor(Math.random() * 1000),
+      timestamp,
+      networkType,
+      codec,
+      blockingProb,
+      trafficData,
+      explanation: null,
+      modelUsed: selectedModel,
+      comparisonIndex: index
+    };
+
+    newSnapshots.push(snapshot);
+  });
+
+  // Store snapshots
+  snapshots.push(...newSnapshots);
+  
+  // Clear existing results
+  resultsSection.innerHTML = '';
+  
+  // Create snapshots container for side-by-side layout
+  const snapshotsContainer = document.createElement('div');
+  snapshotsContainer.id = 'snapshots-container';
+  snapshotsContainer.className = 'snapshots-container';
+  resultsSection.appendChild(snapshotsContainer);
+
+  // Render both snapshots
+  newSnapshots.forEach(snapshot => {
+    const snapshotHtml = renderSnapshot(snapshot);
+    const snapshotSection = document.createElement('section');
+    snapshotSection.id = `snapshot-${snapshot.id}`;
+    snapshotSection.className = 'snapshot';
+    snapshotSection.innerHTML = snapshotHtml;
+    snapshotsContainer.appendChild(snapshotSection);
+    
+    // Initialize simulation for this snapshot
+    if (window.initializeSimulation) {
+      setTimeout(() => {
+        window.initializeSimulation(snapshot.id);
+      }, 100);
+    }
+  });
+
+  // Clear selections
+  window.selectedAnalyses = [];
+  updateSelectionDisplay();
+
+  // Restore button
+  setTimeout(() => {
+    runButton.textContent = originalText;
+    runButton.disabled = false;
+  }, 1000);
   
   // Scroll to results
   resultsSection.scrollIntoView({ behavior: 'smooth' });
@@ -2006,4 +2116,262 @@ function getSimulationData(snapshotId) {
     actualBlockingRate,
     efficiencyScore
   };
+}
+
+// Global state for comparison mode
+window.comparisonMode = false;
+window.selectedAnalyses = [];
+window.maxComparisons = 2;
+
+// Initialize the page
+document.addEventListener('DOMContentLoaded', function() {
+  initializeComparisonMode();
+  initializeForm();
+  initializeExistingSnapshots();
+});
+
+function initializeComparisonMode() {
+  const container = document.querySelector('.container');
+  
+  // Add mode selection at the top
+  const modeSection = document.createElement('div');
+  modeSection.className = 'mode-selection';
+  modeSection.innerHTML = `
+    <div class="mode-header">
+      <h2>🎯 Analysis Mode</h2>
+      <p>Choose your analysis approach</p>
+    </div>
+    <div class="mode-buttons">
+      <button id="single-mode" class="mode-btn active" onclick="setMode('single')">
+        <span class="mode-icon">📊</span>
+        <span class="mode-title">Single Analysis</span>
+        <span class="mode-desc">Analyze one protocol configuration</span>
+      </button>
+      <button id="comparison-mode" class="mode-btn" onclick="setMode('comparison')">
+        <span class="mode-icon">⚖️</span>
+        <span class="mode-title">Comparison Analysis</span>
+        <span class="mode-desc">Compare two different configurations</span>
+      </button>
+    </div>
+    <div id="comparison-selection" class="comparison-selection" style="display: none;">
+      <h3>📋 Select Analyses for Comparison</h3>
+      <div class="selection-status">
+        <span id="selection-count" class="selection-count">0 of 2 selected</span>
+        <span id="selection-status" class="selection-status-text">Select exactly 2 different configurations</span>
+      </div>
+      <div id="selected-analyses" class="selected-analyses"></div>
+      <div id="comparison-errors" class="comparison-errors"></div>
+    </div>
+  `;
+  
+  container.insertBefore(modeSection, container.firstChild);
+}
+
+function setMode(mode) {
+  window.comparisonMode = mode === 'comparison';
+  
+  // Update mode buttons
+  document.getElementById('single-mode').classList.toggle('active', mode === 'single');
+  document.getElementById('comparison-mode').classList.toggle('active', mode === 'comparison');
+  
+  // Show/hide comparison selection
+  const comparisonSelection = document.getElementById('comparison-selection');
+  comparisonSelection.style.display = mode === 'comparison' ? 'block' : 'none';
+  
+  // Update form behavior
+  updateFormForMode();
+  
+  // Clear previous selections when switching modes
+  if (mode === 'single') {
+    window.selectedAnalyses = [];
+    updateSelectionDisplay();
+  }
+  
+  // Update form section class
+  const formSection = document.querySelector('.form-section');
+  if (formSection) {
+    formSection.classList.toggle('comparison-mode', window.comparisonMode);
+  }
+}
+
+function updateFormForMode() {
+  const runButton = document.getElementById('runAnalysis');
+  const formTitle = document.querySelector('.form-section h2');
+  
+  if (window.comparisonMode) {
+    runButton.textContent = 'Generate Comparison';
+    runButton.disabled = true;
+    formTitle.textContent = '📋 Analysis Configuration (Comparison Mode)';
+    
+    // Add "Add to Selection" button if it doesn't exist
+    if (!document.getElementById('addToSelection')) {
+      const addButton = document.createElement('button');
+      addButton.id = 'addToSelection';
+      addButton.type = 'button';
+      addButton.className = 'btn btn-secondary';
+      addButton.textContent = '➕ Add to Selection';
+      addButton.onclick = addAnalysisToSelection;
+      
+      // Insert before the run button
+      runButton.parentNode.insertBefore(addButton, runButton);
+    }
+  } else {
+    runButton.textContent = 'Run Analysis';
+    runButton.disabled = false;
+    formTitle.textContent = '📋 Analysis Configuration';
+    
+    // Remove "Add to Selection" button if it exists
+    const addButton = document.getElementById('addToSelection');
+    if (addButton) {
+      addButton.remove();
+    }
+  }
+}
+
+function addAnalysisToSelection() {
+  if (!window.comparisonMode) return;
+  
+  const formData = getFormData();
+  const analysisKey = JSON.stringify(formData);
+  
+  // Check if already selected
+  const existingIndex = window.selectedAnalyses.findIndex(a => JSON.stringify(a) === analysisKey);
+  if (existingIndex !== -1) {
+    showComparisonError('This configuration is already selected');
+    return;
+  }
+  
+  // Check if we have room for more selections
+  if (window.selectedAnalyses.length >= window.maxComparisons) {
+    showComparisonError(`Maximum ${window.maxComparisons} analyses allowed`);
+    return;
+  }
+  
+  // Add to selection
+  window.selectedAnalyses.push(formData);
+  updateSelectionDisplay();
+  
+  // Check for duplicates
+  checkForDuplicates();
+}
+
+function updateSelectionDisplay() {
+  const countElement = document.getElementById('selection-count');
+  const statusElement = document.getElementById('selection-status-text');
+  const selectedContainer = document.getElementById('selected-analyses');
+  const runButton = document.getElementById('runAnalysis');
+  
+  const count = window.selectedAnalyses.length;
+  countElement.textContent = `${count} of ${window.maxComparisons} selected`;
+  
+  if (count === 0) {
+    statusElement.textContent = 'Select exactly 2 different configurations';
+    statusElement.className = 'selection-status-text neutral';
+  } else if (count === 1) {
+    statusElement.textContent = 'Select 1 more configuration';
+    statusElement.className = 'selection-status-text pending';
+  } else if (count === 2) {
+    statusElement.textContent = 'Ready to generate comparison';
+    statusElement.className = 'selection-status-text ready';
+    runButton.disabled = false;
+  }
+  
+  // Update selected analyses display
+  selectedContainer.innerHTML = window.selectedAnalyses.map((analysis, index) => `
+    <div class="selected-analysis" data-index="${index}">
+      <div class="analysis-preview">
+        <span class="analysis-type">${analysis.networkType.toUpperCase()}</span>
+        <span class="analysis-codec">${analysis.codec || 'N/A'}</span>
+        <span class="analysis-blocking">${(analysis.blockingProb * 100).toFixed(1)}%</span>
+      </div>
+      <button class="remove-analysis" onclick="removeAnalysis(${index})">✕</button>
+    </div>
+  `).join('');
+}
+
+function removeAnalysis(index) {
+  window.selectedAnalyses.splice(index, 1);
+  updateSelectionDisplay();
+  checkForDuplicates();
+}
+
+function checkForDuplicates() {
+  if (window.selectedAnalyses.length !== 2) return;
+  
+  const [analysis1, analysis2] = window.selectedAnalyses;
+  const isDuplicate = 
+    analysis1.networkType === analysis2.networkType &&
+    analysis1.codec === analysis2.codec &&
+    analysis1.blockingProb === analysis2.blockingProb;
+  
+  if (isDuplicate) {
+    const duplicateParams = [];
+    if (analysis1.networkType === analysis2.networkType) duplicateParams.push('Network Type');
+    if (analysis1.codec === analysis2.codec) duplicateParams.push('Codec');
+    if (analysis1.blockingProb === analysis2.blockingProb) duplicateParams.push('Blocking Probability');
+    
+    showComparisonError(`Duplicate configurations detected. Identical parameters: ${duplicateParams.join(', ')}`);
+    document.getElementById('runAnalysis').disabled = true;
+  } else {
+    clearComparisonErrors();
+    document.getElementById('runAnalysis').disabled = false;
+  }
+}
+
+function showComparisonError(message) {
+  const errorContainer = document.getElementById('comparison-errors');
+  errorContainer.innerHTML = `<div class="error-message">⚠️ ${message}</div>`;
+}
+
+function clearComparisonErrors() {
+  const errorContainer = document.getElementById('comparison-errors');
+  errorContainer.innerHTML = '';
+}
+
+function getFormData() {
+  const networkType = document.querySelector('input[name="networkType"]:checked')?.value;
+  const codec = codecSelect.value;
+  const blockingProb = parseFloat(blockingProbInput.value);
+  
+  if (!networkType || isNaN(blockingProb)) {
+    return null;
+  }
+  
+  return {
+    networkType,
+    codec,
+    blockingProb
+  };
+}
+
+function addAnalysisToSelection() {
+  if (!window.comparisonMode) return;
+  
+  const formData = getFormData();
+  if (!formData) {
+    showComparisonError('Please fill in all required fields');
+    return;
+  }
+  
+  const analysisKey = JSON.stringify(formData);
+  
+  // Check if already selected
+  const existingIndex = window.selectedAnalyses.findIndex(a => JSON.stringify(a) === analysisKey);
+  if (existingIndex !== -1) {
+    showComparisonError('This configuration is already selected');
+    return;
+  }
+  
+  // Check if we have room for more selections
+  if (window.selectedAnalyses.length >= window.maxComparisons) {
+    showComparisonError(`Maximum ${window.maxComparisons} analyses allowed`);
+    return;
+  }
+  
+  // Add to selection
+  window.selectedAnalyses.push(formData);
+  updateSelectionDisplay();
+  
+  // Check for duplicates
+  checkForDuplicates();
 }
