@@ -788,6 +788,14 @@ function checkIfSnapshotsAreIdentical(snapshot1, snapshot2) {
   return true;
 }
 
+function generateDescriptiveLabel(snapshot) {
+  if (snapshot.networkType === 'pstn') {
+    return `PSTN (${(snapshot.blockingProb * 100).toFixed(1)}% blocking)`;
+  } else {
+    return `VoIP ${snapshot.codec.toUpperCase()} (${(snapshot.blockingProb * 100).toFixed(1)}% blocking)`;
+  }
+}
+
 function generateEfficiencyChart(snapshot1, snapshot2) {
     // Check if snapshots are identical
     if (checkIfSnapshotsAreIdentical(snapshot1, snapshot2)) {
@@ -838,9 +846,13 @@ function generateEfficiencyChart(snapshot1, snapshot2) {
     // Add background
     svg += `<rect width="${width}" height="${height}" fill="#fafafa"/>`;
     
+    // Generate descriptive labels
+    const label1 = generateDescriptiveLabel(snapshot1);
+    const label2 = generateDescriptiveLabel(snapshot2);
+    
     // Add title
     svg += `<text x="${width/2}" y="30" text-anchor="middle" font-size="24" font-weight="bold" fill="#2c3e50">Bandwidth Efficiency Comparison</text>`;
-    svg += `<text x="${width/2}" y="50" text-anchor="middle" font-size="14" fill="#7f8c8d">Analysis 1 vs Analysis 2</text>`;
+    svg += `<text x="${width/2}" y="50" text-anchor="middle" font-size="14" fill="#7f8c8d">${label1} vs ${label2}</text>`;
     
     // Add chart area with background
     svg += `<g transform="translate(${margin.left},${margin.top})">`;
@@ -914,20 +926,23 @@ function generateEfficiencyChart(snapshot1, snapshot2) {
       }
     });
     
-    // Add legend
-    const legendX = chartWidth - 180;
+    // Add legend with descriptive labels
+    const legendX = chartWidth - 200;
     const legendY = 20;
     
+    // Calculate legend width based on label lengths
+    const legendWidth = Math.max(label1.length, label2.length) * 8 + 50;
+    
     // Legend background
-    svg += `<rect x="${legendX - 15}" y="${legendY - 10}" width="170" height="70" fill="white" stroke="#bdc3c7" stroke-width="1" rx="6"/>`;
+    svg += `<rect x="${legendX - 15}" y="${legendY - 10}" width="${legendWidth}" height="70" fill="white" stroke="#bdc3c7" stroke-width="1" rx="6"/>`;
     
-    // Analysis 1 legend
+    // First analysis legend
     svg += `<rect x="${legendX}" y="${legendY}" width="18" height="18" fill="#3498db" rx="2"/>`;
-    svg += `<text x="${legendX + 25}" y="${legendY + 13}" font-size="13" font-weight="bold" fill="#2c3e50">Analysis 1</text>`;
+    svg += `<text x="${legendX + 25}" y="${legendY + 13}" font-size="12" font-weight="bold" fill="#2c3e50">${label1}</text>`;
     
-    // Analysis 2 legend
+    // Second analysis legend
     svg += `<rect x="${legendX}" y="${legendY + 25}" width="18" height="18" fill="#2ecc71" rx="2"/>`;
-    svg += `<text x="${legendX + 25}" y="${legendY + 38}" font-size="13" font-weight="bold" fill="#2c3e50">Analysis 2</text>`;
+    svg += `<text x="${legendX + 25}" y="${legendY + 38}" font-size="12" font-weight="bold" fill="#2c3e50">${label2}</text>`;
     
     svg += '</g>';
     svg += '</svg>';
@@ -964,10 +979,14 @@ async function compareSelected() {
     return;
   }
   
+  // Generate descriptive labels for table headers
+  const label1 = generateDescriptiveLabel(snapshot1);
+  const label2 = generateDescriptiveLabel(snapshot2);
+  
   // Create unified comparison table
   comparisonHtml += '<h3>Metrics Comparison</h3>';
   
-  const headers = ['From', 'To', 'Metric', 'Analysis 1', 'Analysis 2', 'Difference'];
+  const headers = ['From', 'To', 'Metric', label1, label2, 'Difference'];
   const rows = [];
   
   // Add common metrics for both snapshots
@@ -1144,11 +1163,15 @@ async function getAiComparisonSummary(snapshot1, snapshot2) {
   aiSummaryBtn.disabled = true;
   
   try {
+    // Generate descriptive labels
+    const label1 = generateDescriptiveLabel(snapshot1);
+    const label2 = generateDescriptiveLabel(snapshot2);
+    
     // Format the data for the LLM
     let prompt = `Please provide a comparison summary of the following two network traffic analyses:\n\n`;
     
     // First snapshot
-    prompt += `ANALYSIS 1:\n`;
+    prompt += `${label1.toUpperCase()}:\n`;
     prompt += `Network Type: ${snapshot1.networkType.toUpperCase()}\n`;
     prompt += `Timestamp: ${snapshot1.timestamp}\n`;
     prompt += `Blocking Probability: ${snapshot1.blockingProb}\n`;
@@ -1171,7 +1194,7 @@ async function getAiComparisonSummary(snapshot1, snapshot2) {
     }
     
     // Second snapshot
-    prompt += `\nANALYSIS 2:\n`;
+    prompt += `\n${label2.toUpperCase()}:\n`;
     prompt += `Network Type: ${snapshot2.networkType.toUpperCase()}\n`;
     prompt += `Timestamp: ${snapshot2.timestamp}\n`;
     prompt += `Blocking Probability: ${snapshot2.blockingProb}\n`;
@@ -1195,11 +1218,11 @@ async function getAiComparisonSummary(snapshot1, snapshot2) {
     
     // Add explanations if available
     if (snapshot1.explanation) {
-      prompt += `\nANALYSIS 1 EXPLANATION (${snapshot1.modelUsed}):\n${snapshot1.explanation}\n`;
+      prompt += `\n${label1.toUpperCase()} EXPLANATION (${snapshot1.modelUsed}):\n${snapshot1.explanation}\n`;
     }
     
     if (snapshot2.explanation) {
-      prompt += `\nANALYSIS 2 EXPLANATION (${snapshot2.modelUsed}):\n${snapshot2.explanation}\n`;
+      prompt += `\n${label2.toUpperCase()} EXPLANATION (${snapshot2.modelUsed}):\n${snapshot2.explanation}\n`;
     }
     
     prompt += `\nPlease provide a comprehensive, structured comparison summary with the following sections:\n\n`;
