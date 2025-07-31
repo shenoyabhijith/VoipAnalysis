@@ -121,6 +121,19 @@
       addLogEntry(logElement, `Codec: ${snapshot.codec.toUpperCase()}`, '#3498db');
     }
     addLogEntry(logElement, `Call Duration: ${simulationParams.callDuration} seconds`, '#3498db');
+    addLogEntry(logElement, `⏱️ Simulation Duration: 10 seconds`, '#f39c12');
+    
+    // Add simulation parameter summary
+    addLogEntry(logElement, '📊 Simulation Parameters:', '#9b59b6');
+    addLogEntry(logElement, `  • Bandwidth per call: ${simulationParams.bandwidthPerCall} kbps`, '#9b59b6');
+    addLogEntry(logElement, `  • Max concurrent calls: ${simulationParams.maxConcurrentCalls}`, '#9b59b6');
+    addLogEntry(logElement, `  • Blocking threshold: ${(simulationParams.blockingProb * 100).toFixed(1)}%`, '#9b59b6');
+    
+    // Add link-specific information
+    addLogEntry(logElement, '🔗 Link Configuration:', '#9b59b6');
+    links.forEach((link, index) => {
+      addLogEntry(logElement, `  • ${link.name}: ${link.rate.toFixed(2)} calls/min, max ${link.maxConcurrentCalls} calls`, '#9b59b6');
+    });
 
     // Start call generation for each link with dynamic rates
     links.forEach((link, index) => {
@@ -140,6 +153,25 @@
     }, 2000); // Update every 2 seconds instead of 1
     
     window.simulationTimers[`${snapshotId}-metrics`] = metricsTimer;
+    
+    // Auto-stop simulation after 10 seconds
+    const autoStopTimer = setTimeout(() => {
+      addLogEntry(logElement, '⏰ Simulation completed (10 seconds)', '#f39c12');
+      stopSimulation(snapshotId);
+    }, 10000); // 10 seconds
+    
+    window.simulationTimers[`${snapshotId}-autostop`] = autoStopTimer;
+    
+    // Start countdown timer
+    let timeRemaining = 10;
+    const countdownTimer = setInterval(() => {
+      timeRemaining--;
+      if (timeRemaining > 0) {
+        addLogEntry(logElement, `⏱️ Time remaining: ${timeRemaining} seconds`, '#f39c12');
+      }
+    }, 1000);
+    
+    window.simulationTimers[`${snapshotId}-countdown`] = countdownTimer;
     
     console.log('Dynamic simulation started successfully for:', snapshotId);
   }
@@ -229,7 +261,7 @@
     if (isBlocked) {
       // Call is blocked
       data.blockedCalls++;
-      addLogEntry(logElement, `🚫 Call ${callId} BLOCKED: ${link.name} (capacity reached)`, '#e74c3c');
+      addLogEntry(logElement, `🚫 Call ${callId} BLOCKED: ${link.name} (${currentActiveCalls}/${Math.round(blockingThreshold)} calls, ${(link.blockingProb * 100).toFixed(1)}% blocking)`, '#e74c3c');
       return;
     }
 
@@ -238,14 +270,14 @@
     data.totalCalls++;
     data.bandwidthUsage += link.bandwidth;
 
-    addLogEntry(logElement, `🟢 Call ${callId} started: ${link.name}`, '#2ecc71');
+    addLogEntry(logElement, `🟢 Call ${callId} started: ${link.name} (${currentActiveCalls + 1}/${maxCalls} capacity, ${link.bandwidth.toFixed(3)} Mbps)`, '#2ecc71');
 
     // Simulate call duration
     setTimeout(() => {
       if (data.activeCalls > 0) {
         data.activeCalls--;
         data.bandwidthUsage -= link.bandwidth;
-        addLogEntry(logElement, `🔴 Call ${callId} ended: ${link.name}`, '#e74c3c');
+        addLogEntry(logElement, `🔴 Call ${callId} ended: ${link.name} (${data.activeCalls}/${maxCalls} capacity)`, '#e74c3c');
       }
     }, link.callDuration);
   }
@@ -287,7 +319,11 @@
     // Clear all timers for this simulation
     Object.keys(window.simulationTimers).forEach(key => {
       if (key.startsWith(snapshotId)) {
-        clearInterval(window.simulationTimers[key]);
+        if (key.includes('autostop') || key.includes('countdown')) {
+          clearTimeout(window.simulationTimers[key]);
+        } else {
+          clearInterval(window.simulationTimers[key]);
+        }
         delete window.simulationTimers[key];
       }
     });

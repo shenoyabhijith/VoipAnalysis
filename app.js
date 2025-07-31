@@ -155,10 +155,52 @@ function renderCallSimulationSection(snapshot) {
   const simulationHtml = `
     <div class="call-simulation-section">
       <h3>📞 Real-Time Call Simulation</h3>
+      
+      <div class="simulation-parameters">
+        <h4>🔧 Simulation Parameters</h4>
+        <div class="parameter-grid">
+          <div class="parameter-item">
+            <span class="param-label">Network Type:</span>
+            <span class="param-value">${snapshot.networkType.toUpperCase()}</span>
+          </div>
+          <div class="parameter-item">
+            <span class="param-label">Codec:</span>
+            <span class="param-value">${snapshot.codec ? snapshot.codec.toUpperCase() : 'N/A'}</span>
+          </div>
+          <div class="parameter-item">
+            <span class="param-label">Blocking Probability:</span>
+            <span class="param-value">${(snapshot.blockingProb * 100).toFixed(1)}%</span>
+          </div>
+          <div class="parameter-item">
+            <span class="param-label">Call Duration:</span>
+            <span class="param-value">3 minutes</span>
+          </div>
+          <div class="parameter-item">
+            <span class="param-label">Bandwidth per Call:</span>
+            <span class="param-value">${snapshot.networkType === 'pstn' ? '64 kbps' : (snapshot.codec === 'g729a' ? '8 kbps' : '64 kbps')}</span>
+          </div>
+          <div class="parameter-item">
+            <span class="param-label">Capacity Model:</span>
+            <span class="param-value">${snapshot.networkType === 'pstn' ? 'Circuit-based (T1)' : 'Packet-based (VoIP)'}</span>
+          </div>
+        </div>
+        
+        <div class="simulation-explanation">
+          <h5>📊 How Blocking Works:</h5>
+          <ul>
+            <li><strong>Call Rate:</strong> Based on Erlangs × (1 - Blocking Probability)</li>
+            <li><strong>Capacity Limit:</strong> ${snapshot.networkType === 'pstn' ? 'T1 circuits (24 channels)' : 'Bandwidth capacity'}</li>
+            <li><strong>Blocking Threshold:</strong> Max calls × (1 - ${(snapshot.blockingProb * 100).toFixed(1)}%)</li>
+            <li><strong>Call Rejection:</strong> When active calls ≥ threshold</li>
+          </ul>
+        </div>
+      </div>
+      
       <div class="simulation-controls">
         <button id="startSim-${snapshot.id}" class="sim-btn start-btn">Start Simulation</button>
         <button id="stopSim-${snapshot.id}" class="sim-btn stop-btn" disabled>Stop Simulation</button>
       </div>
+      
       <div class="simulation-metrics">
         <div class="sim-metric">
           <span class="metric-label">Active Calls:</span>
@@ -181,6 +223,7 @@ function renderCallSimulationSection(snapshot) {
           <span id="blockingRate-${snapshot.id}" class="metric-value">0.0%</span>
         </div>
       </div>
+      
       <div class="simulation-log" id="simLog-${snapshot.id}">
         <div class="log-entry">Ready to start simulation...</div>
       </div>
