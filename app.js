@@ -1554,29 +1554,86 @@ async function getAiComparisonSummary(snapshot1, snapshot2) {
     // Format the data for the LLM with precomputed metrics
     let prompt = `Compare these network traffic analyses:\n\n`;
     
+    // Check if we have simulation data for both analyses
+    const hasSimulationData1 = comparison.first.totalCalls !== undefined;
+    const hasSimulationData2 = comparison.second.totalCalls !== undefined;
+    
     prompt += `ANALYSIS 1 (${label1}):\n`;
     prompt += `- Type: ${comparison.first.networkType.toUpperCase()}\n`;
     prompt += `- Codec: ${comparison.first.codec.toUpperCase()}\n`;
     prompt += `- Blocking: ${(comparison.first.blockingProb * 100).toFixed(1)}%\n`;
-    prompt += `- Total Traffic: ${comparison.first.totalDailyMinutes.toLocaleString()} min/day\n`;
-    prompt += `- Total Erlangs: ${comparison.first.totalErlangs.toFixed(1)}\n`;
-    prompt += `- Total Bandwidth: ${comparison.first.totalBandwidth.toFixed(2)} Mbps\n`;
-    prompt += `- Efficiency: ${comparison.first.efficiencyScore.toFixed(2)} calls/Mbps\n`;
-    prompt += `- Busiest Link: ${comparison.first.busiestLink.route} (${comparison.first.busiestLink.erlangs.toFixed(2)} Erlangs)\n`;
-    prompt += `- Highest BW: ${comparison.first.highestBandwidthLink.route} (${comparison.first.highestBandwidthLink.bandwidth.toFixed(2)} Mbps)\n\n`;
+    
+    if (hasSimulationData1) {
+      prompt += `- SIMULATION RESULTS (20s test):\n`;
+      prompt += `  * Total Calls: ${comparison.first.totalCalls}\n`;
+      prompt += `  * Blocked Calls: ${comparison.first.blockedCalls}\n`;
+      prompt += `  * Actual Blocking Rate: ${comparison.first.actualBlockingRate.toFixed(1)}%\n`;
+      prompt += `  * Peak Active Calls: ${comparison.first.peakActiveCalls}\n`;
+      prompt += `  * Peak Bandwidth: ${comparison.first.peakBandwidthUsage.toFixed(2)} Mbps\n`;
+      prompt += `  * Efficiency: ${comparison.first.efficiencyScore.toFixed(2)} calls/Mbps\n`;
+    }
+    
+    prompt += `- THEORETICAL ANALYSIS:\n`;
+    prompt += `  * Total Traffic: ${comparison.first.totalDailyMinutes.toLocaleString()} min/day\n`;
+    prompt += `  * Total Erlangs: ${comparison.first.totalErlangs.toFixed(1)}\n`;
+    prompt += `  * Total Bandwidth: ${comparison.first.totalBandwidth.toFixed(2)} Mbps\n`;
+    if (comparison.first.busiestLink) {
+      prompt += `  * Busiest Link: ${comparison.first.busiestLink.route} (${comparison.first.busiestLink.erlangs.toFixed(2)} Erlangs)\n`;
+    }
+    if (comparison.first.highestBandwidthLink) {
+      prompt += `  * Highest BW: ${comparison.first.highestBandwidthLink.route} (${comparison.first.highestBandwidthLink.bandwidth.toFixed(2)} Mbps)\n`;
+    }
+    prompt += `\n`;
     
     prompt += `ANALYSIS 2 (${label2}):\n`;
     prompt += `- Type: ${comparison.second.networkType.toUpperCase()}\n`;
     prompt += `- Codec: ${comparison.second.codec.toUpperCase()}\n`;
     prompt += `- Blocking: ${(comparison.second.blockingProb * 100).toFixed(1)}%\n`;
-    prompt += `- Total Traffic: ${comparison.second.totalDailyMinutes.toLocaleString()} min/day\n`;
-    prompt += `- Total Erlangs: ${comparison.second.totalErlangs.toFixed(1)}\n`;
-    prompt += `- Total Bandwidth: ${comparison.second.totalBandwidth.toFixed(2)} Mbps\n`;
-    prompt += `- Efficiency: ${comparison.second.efficiencyScore.toFixed(2)} calls/Mbps\n`;
-    prompt += `- Busiest Link: ${comparison.second.busiestLink.route} (${comparison.second.busiestLink.erlangs.toFixed(2)} Erlangs)\n`;
-    prompt += `- Highest BW: ${comparison.second.highestBandwidthLink.route} (${comparison.second.highestBandwidthLink.bandwidth.toFixed(2)} Mbps)\n\n`;
+    
+    if (hasSimulationData2) {
+      prompt += `- SIMULATION RESULTS (20s test):\n`;
+      prompt += `  * Total Calls: ${comparison.second.totalCalls}\n`;
+      prompt += `  * Blocked Calls: ${comparison.second.blockedCalls}\n`;
+      prompt += `  * Actual Blocking Rate: ${comparison.second.actualBlockingRate.toFixed(1)}%\n`;
+      prompt += `  * Peak Active Calls: ${comparison.second.peakActiveCalls}\n`;
+      prompt += `  * Peak Bandwidth: ${comparison.second.peakBandwidthUsage.toFixed(2)} Mbps\n`;
+      prompt += `  * Efficiency: ${comparison.second.efficiencyScore.toFixed(2)} calls/Mbps\n`;
+    }
+    
+    prompt += `- THEORETICAL ANALYSIS:\n`;
+    prompt += `  * Total Traffic: ${comparison.second.totalDailyMinutes.toLocaleString()} min/day\n`;
+    prompt += `  * Total Erlangs: ${comparison.second.totalErlangs.toFixed(1)}\n`;
+    prompt += `  * Total Bandwidth: ${comparison.second.totalBandwidth.toFixed(2)} Mbps\n`;
+    if (comparison.second.busiestLink) {
+      prompt += `  * Busiest Link: ${comparison.second.busiestLink.route} (${comparison.second.busiestLink.erlangs.toFixed(2)} Erlangs)\n`;
+    }
+    if (comparison.second.highestBandwidthLink) {
+      prompt += `  * Highest BW: ${comparison.second.highestBandwidthLink.route} (${comparison.second.highestBandwidthLink.bandwidth.toFixed(2)} Mbps)\n`;
+    }
+    prompt += `\n`;
     
     prompt += `COMPARISON METRICS:\n`;
+    
+    if (hasSimulationData1 && hasSimulationData2) {
+      prompt += `SIMULATION COMPARISON:\n`;
+      const callDiff = comparison.second.totalCalls - comparison.first.totalCalls;
+      const blockedDiff = comparison.second.blockedCalls - comparison.first.blockedCalls;
+      const blockingRateDiff = comparison.second.actualBlockingRate - comparison.first.actualBlockingRate;
+      const peakCallsDiff = comparison.second.peakActiveCalls - comparison.first.peakActiveCalls;
+      const peakBwDiff = comparison.second.peakBandwidthUsage - comparison.first.peakBandwidthUsage;
+      const efficiencyDiff = comparison.second.efficiencyScore - comparison.first.efficiencyScore;
+      
+      prompt += `- Total Calls Difference: ${callDiff} (${callDiff > 0 ? '+' : ''}${callDiff})\n`;
+      prompt += `- Blocked Calls Difference: ${blockedDiff} (${blockedDiff > 0 ? '+' : ''}${blockedDiff})\n`;
+      prompt += `- Blocking Rate Difference: ${blockingRateDiff.toFixed(1)}% (${blockingRateDiff > 0 ? '+' : ''}${blockingRateDiff.toFixed(1)}%)\n`;
+      prompt += `- Peak Active Calls Difference: ${peakCallsDiff} (${peakCallsDiff > 0 ? '+' : ''}${peakCallsDiff})\n`;
+      prompt += `- Peak Bandwidth Difference: ${peakBwDiff.toFixed(2)} Mbps (${peakBwDiff > 0 ? '+' : ''}${peakBwDiff.toFixed(2)})\n`;
+      prompt += `- Efficiency Difference: ${efficiencyDiff.toFixed(2)} calls/Mbps (${efficiencyDiff > 0 ? '+' : ''}${efficiencyDiff.toFixed(2)})\n`;
+      prompt += `- More Efficient (Simulation): Analysis ${efficiencyDiff > 0 ? '2' : '1'}\n`;
+      prompt += `- Higher Blocking Rate: Analysis ${blockingRateDiff > 0 ? '2' : '1'}\n\n`;
+    }
+    
+    prompt += `THEORETICAL COMPARISON:\n`;
     prompt += `- Bandwidth Difference: ${comparison.comparisons.bandwidthDifference.toFixed(2)} Mbps (${comparison.comparisons.bandwidthDifference > 0 ? '+' : ''}${comparison.comparisons.bandwidthDifference.toFixed(2)})\n`;
     prompt += `- Efficiency Difference: ${comparison.comparisons.efficiencyDifference.toFixed(2)} calls/Mbps (${comparison.comparisons.efficiencyDifference > 0 ? '+' : ''}${comparison.comparisons.efficiencyDifference.toFixed(2)})\n`;
     prompt += `- Erlangs Difference: ${comparison.comparisons.erlangsDifference.toFixed(1)} (${comparison.comparisons.erlangsDifference > 0 ? '+' : ''}${comparison.comparisons.erlangsDifference.toFixed(1)})\n`;
