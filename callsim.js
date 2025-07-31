@@ -249,10 +249,11 @@
     const currentActiveCalls = data.activeCalls;
     const maxCalls = link.maxConcurrentCalls;
     
-    // Simulate blocking based on blocking probability
-    // When at capacity, randomly block calls based on blocking probability
-    const isAtCapacity = currentActiveCalls >= maxCalls;
-    const isBlocked = isAtCapacity && Math.random() < link.blockingProb;
+    // Simulate blocking based on Erlang-B formula
+    // Blocking probability increases as system approaches capacity
+    const utilization = currentActiveCalls / maxCalls;
+    const blockingProbability = link.blockingProb * Math.pow(utilization, 2); // Higher blocking as utilization increases
+    const isBlocked = Math.random() < blockingProbability;
     
     const callId = (link.callId || 0) + 1;
     link.callId = callId;
@@ -260,7 +261,7 @@
     if (isBlocked) {
       // Call is blocked
       data.blockedCalls++;
-      addLogEntry(logElement, `🚫 Call ${callId} BLOCKED: ${link.name} (${currentActiveCalls}/${maxCalls} capacity, ${(link.blockingProb * 100).toFixed(1)}% blocking)`, '#e74c3c');
+      addLogEntry(logElement, `🚫 Call ${callId} BLOCKED: ${link.name} (${currentActiveCalls}/${maxCalls} capacity, ${(blockingProbability * 100).toFixed(1)}% actual blocking)`, '#e74c3c');
       return;
     }
 
