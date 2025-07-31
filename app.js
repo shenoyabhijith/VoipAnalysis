@@ -42,8 +42,14 @@ let snapshots = [];
 let availableModels = [];
 let selectedSnapshots = new Set();
 
-// Make snapshots globally accessible for simulation
-window.snapshots = snapshots;
+  // Make snapshots globally accessible for simulation
+  window.snapshots = snapshots;
+  
+  // Update global snapshots reference when snapshots array changes
+  Object.defineProperty(window, 'snapshots', {
+    get: () => snapshots,
+    set: (value) => { snapshots = value; }
+  });
 
 // Add protocol efficiency metrics and call simulation integration
 let currentSimulationData = null;
@@ -767,6 +773,13 @@ function renderSnapshot(snapshot) {
       // Re-render the snapshot without the explanation
       renderSnapshot(snapshots[snapshotIndex]);
     });
+  }
+  
+  // Initialize simulation for this snapshot
+  if (window.initializeSimulation) {
+    setTimeout(() => {
+      window.initializeSimulation(id);
+    }, 100);
   }
 }
 

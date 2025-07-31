@@ -8,11 +8,16 @@
 
   // Initialize simulation for each snapshot
   function initializeSimulation(snapshotId) {
+    console.log('Initializing simulation for snapshot:', snapshotId);
+    
     const startBtn = document.getElementById(`startSim-${snapshotId}`);
     const stopBtn = document.getElementById(`stopSim-${snapshotId}`);
     const logElement = document.getElementById(`simLog-${snapshotId}`);
     
-    if (!startBtn || !stopBtn || !logElement) return;
+    if (!startBtn || !stopBtn || !logElement) {
+      console.log('Missing elements for snapshot:', snapshotId, { startBtn: !!startBtn, stopBtn: !!stopBtn, logElement: !!logElement });
+      return;
+    }
 
     // Clear previous simulation data
     if (window.simulationData[snapshotId]) {
@@ -29,17 +34,36 @@
       links: []
     };
 
+    // Remove existing event listeners to prevent duplicates
+    const newStartBtn = startBtn.cloneNode(true);
+    const newStopBtn = stopBtn.cloneNode(true);
+    startBtn.parentNode.replaceChild(newStartBtn, startBtn);
+    stopBtn.parentNode.replaceChild(newStopBtn, stopBtn);
+
     // Add event listeners
-    startBtn.addEventListener('click', () => startSimulation(snapshotId));
-    stopBtn.addEventListener('click', () => stopSimulation(snapshotId));
+    newStartBtn.addEventListener('click', () => {
+      console.log('Start simulation clicked for:', snapshotId);
+      startSimulation(snapshotId);
+    });
+    newStopBtn.addEventListener('click', () => {
+      console.log('Stop simulation clicked for:', snapshotId);
+      stopSimulation(snapshotId);
+    });
+
+    console.log('Simulation initialized for snapshot:', snapshotId);
   }
 
   function startSimulation(snapshotId) {
+    console.log('Starting simulation for snapshot:', snapshotId);
+    
     const startBtn = document.getElementById(`startSim-${snapshotId}`);
     const stopBtn = document.getElementById(`stopSim-${snapshotId}`);
     const logElement = document.getElementById(`simLog-${snapshotId}`);
     
-    if (!startBtn || !stopBtn || !logElement) return;
+    if (!startBtn || !stopBtn || !logElement) {
+      console.log('Missing elements for starting simulation:', snapshotId);
+      return;
+    }
 
     // Stop any other running simulation
     if (window.simulationRunning && window.currentSimulationId !== snapshotId) {
@@ -56,8 +80,11 @@
     const snapshot = window.snapshots?.find(s => s.id === snapshotId);
     if (!snapshot) {
       addLogEntry(logElement, '❌ No snapshot data found', '#e74c3c');
+      console.log('No snapshot found for ID:', snapshotId);
       return;
     }
+
+    console.log('Found snapshot:', snapshot);
 
     // Initialize simulation with real traffic data
     const links = snapshot.trafficData.map(link => ({
@@ -67,6 +94,8 @@
       protocol: snapshot.networkType,
       codec: snapshot.codec || 'N/A'
     }));
+
+    console.log('Created links:', links);
 
     window.simulationData[snapshotId].links = links;
     window.simulationData[snapshotId].startTime = performance.now();
@@ -82,7 +111,9 @@
 
     // Start call generation for each link
     links.forEach((link, index) => {
-      const interval = 5000 / link.rate; // Convert Erlangs to call interval
+      const interval = Math.max(1000, 5000 / link.rate); // Convert Erlangs to call interval, minimum 1 second
+      console.log(`Setting up timer for ${link.name} with interval: ${interval}ms`);
+      
       const timer = setInterval(() => {
         spawnCall(snapshotId, link, index);
       }, interval);
@@ -96,14 +127,21 @@
     }, 1000);
     
     window.simulationTimers[`${snapshotId}-metrics`] = metricsTimer;
+    
+    console.log('Simulation started successfully for:', snapshotId);
   }
 
   function stopSimulation(snapshotId) {
+    console.log('Stopping simulation for snapshot:', snapshotId);
+    
     const startBtn = document.getElementById(`startSim-${snapshotId}`);
     const stopBtn = document.getElementById(`stopSim-${snapshotId}`);
     const logElement = document.getElementById(`simLog-${snapshotId}`);
     
-    if (!startBtn || !stopBtn || !logElement) return;
+    if (!startBtn || !stopBtn || !logElement) {
+      console.log('Missing elements for stopping simulation:', snapshotId);
+      return;
+    }
 
     window.simulationRunning = false;
     if (window.currentSimulationId === snapshotId) {
@@ -120,9 +158,13 @@
     
     // Final metrics update
     updateSimulationMetrics(snapshotId);
+    
+    console.log('Simulation stopped for:', snapshotId);
   }
 
   function clearSimulation(snapshotId) {
+    console.log('Clearing simulation for snapshot:', snapshotId);
+    
     // Clear all timers for this simulation
     Object.keys(window.simulationTimers).forEach(key => {
       if (key.startsWith(snapshotId)) {
@@ -191,6 +233,8 @@
 
   // Initialize simulations when DOM is ready
   document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, setting up simulation observer');
+    
     // Watch for new snapshots and initialize their simulations
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
@@ -200,6 +244,7 @@
             snapshots.forEach(snapshot => {
               const snapshotId = snapshot.id.replace('snapshot-', '');
               if (snapshotId && !window.simulationData[snapshotId]) {
+                console.log('Found new snapshot, initializing simulation:', snapshotId);
                 setTimeout(() => initializeSimulation(snapshotId), 100);
               }
             });
@@ -208,11 +253,32 @@
       });
     });
 
-    observer.observe(document.getElementById('results'), {
-      childList: true,
-      subtree: true
-    });
+    const resultsElement = document.getElementById('results');
+    if (resultsElement) {
+      observer.observe(resultsElement, {
+        childList: true,
+        subtree: true
+      });
+      console.log('Observer set up for results element');
+    } else {
+      console.log('Results element not found');
+    }
   });
+
+  // Also initialize any existing snapshots
+  function initializeExistingSnapshots() {
+    const existingSnapshots = document.querySelectorAll('.snapshot');
+    existingSnapshots.forEach(snapshot => {
+      const snapshotId = snapshot.id.replace('snapshot-', '');
+      if (snapshotId && !window.simulationData[snapshotId]) {
+        console.log('Initializing existing snapshot:', snapshotId);
+        setTimeout(() => initializeSimulation(snapshotId), 100);
+      }
+    });
+  }
+
+  // Call this after a short delay to catch any snapshots that were already rendered
+  setTimeout(initializeExistingSnapshots, 500);
 
   // Expose functions for external use
   window.updateSimulationLinks = function(links) {
@@ -232,5 +298,8 @@
     window.simulationRunning = false;
     window.currentSimulationId = null;
   };
+
+  // Expose initialization function for manual calls
+  window.initializeSimulation = initializeSimulation;
 
 })();
