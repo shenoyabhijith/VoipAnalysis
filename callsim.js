@@ -5,6 +5,77 @@
   window.simulationMetrics = {};
   window.runningSimulations = new Set(); // Track all running simulations
 
+  // Utility function for factorial calculation
+  function factorial(n) {
+    if (n <= 1) return 1;
+    let result = 1;
+    for (let i = 2; i <= n; i++) {
+      result *= i;
+    }
+    return result;
+  }
+
+  // Proper Erlang-B formula implementation
+  function erlangBBlocking(offeredLoad, capacity) {
+    // Erlang-B formula: B(E,m) = (E^m/m!) / Σ(i=0 to m) (E^i/i!)
+    let numerator = Math.pow(offeredLoad, capacity) / factorial(capacity);
+    let denominator = 0;
+    
+    for (let i = 0; i <= capacity; i++) {
+      denominator += Math.pow(offeredLoad, i) / factorial(i);
+    }
+    
+    return numerator / denominator;
+  }
+
+  // Calculate blocking probability using proper Erlang-B
+  function calculateBlockingProbability(activeCalls, maxCalls, offeredLoad) {
+    // Offered load = call arrival rate × average call duration
+    const currentOfferedLoad = offeredLoad * (activeCalls / maxCalls);
+    return erlangBBlocking(currentOfferedLoad, maxCalls);
+  }
+
+  // Calculate VoIP bandwidth with protocol overhead
+  function calculateVoIPBandwidth(codec, includeHeaders = true) {
+    const codecRates = {
+      'g711': 64,    // kbps
+      'g729a': 8     // kbps
+    };
+    
+    let bandwidth = codecRates[codec] || 64;
+    
+    if (includeHeaders) {
+      // Add protocol overhead
+      const rtpHeader = 12; // bytes
+      const udpHeader = 8;  // bytes
+      const ipHeader = 20;  // bytes
+      const ethernetHeader = 14; // bytes
+      
+      const totalHeaders = rtpHeader + udpHeader + ipHeader + ethernetHeader;
+      const packetSize = (bandwidth * 1000) / (8 * 50); // 50 packets per second
+      const overheadRatio = totalHeaders / packetSize;
+      
+      bandwidth *= (1 + overheadRatio);
+    }
+    
+    return bandwidth;
+  }
+
+  // Simulate network conditions
+  function simulateNetworkConditions(bandwidth) {
+    // Add realistic network variations
+    const jitter = Math.random() * 20; // 0-20ms jitter
+    const packetLoss = Math.random() * 0.02; // 0-2% packet loss
+    const delay = 50 + Math.random() * 100; // 50-150ms delay
+    
+    return {
+      effectiveBandwidth: bandwidth * (1 - packetLoss),
+      jitter,
+      delay,
+      packetLoss
+    };
+  }
+
   // Initialize simulation for each snapshot
   function initializeSimulation(snapshotId) {
     console.log('Initializing simulation for snapshot:', snapshotId);
@@ -137,28 +208,40 @@
       addLogEntry(logElement, `  • ${link.name}: ${link.rate.toFixed(2)} calls/min, max ${link.maxConcurrentCalls} calls`, '#9b59b6');
     });
 
-    // Start call generation for each link with standardized rates
+    // Start call generation using Poisson process
     links.forEach((link, index) => {
-      // Standardize call generation rate across all simulations
-      const standardCallRate = 60; // 60 calls per minute per link (1 call per second)
-      const baseInterval = 1000; // 1 second interval for consistent call generation
-      console.log(`Setting up standardized timer for ${link.name} with interval: ${baseInterval}ms (${standardCallRate} calls/min)`);
+      // Generate call intervals using Poisson distribution
+      const offeredLoad = link.rate; // calls per minute
+      const lambda = offeredLoad / 60; // calls per second
+      const simulationDuration = 20; // seconds
       
-      const timer = setInterval(() => {
-        // Reduced randomness for more consistent call generation
-        const randomFactor = 0.9 + Math.random() * 0.2; // 0.9 to 1.1 (less variation)
-        
-        // Check if we've reached the target call count for this link
-        const currentLinkCalls = data.linkCallCounts[index] || 0;
-        const targetCallsPerLink = 20; // Target 20 calls per link in 20 seconds
-        
-        // Higher spawn probability for more consistent call generation
-        if (Math.random() < 0.98 && currentLinkCalls < targetCallsPerLink) { // 98% chance to spawn, but respect limit
-          spawnDynamicCall(snapshotId, link, index);
+      console.log(`Setting up Poisson call generation for ${link.name} with rate: ${offeredLoad} calls/min (λ=${lambda.toFixed(3)} calls/sec)`);
+      
+      // Generate call arrival times using exponential distribution
+      let cumulativeTime = 0;
+      let callCount = 0;
+      const maxCalls = Math.floor(offeredLoad * simulationDuration / 60); // Expected calls in 20 seconds
+      
+      const generateNextCall = () => {
+        if (callCount >= maxCalls || cumulativeTime >= simulationDuration * 1000) {
+          return; // Stop generating calls
         }
-      }, baseInterval);
+        
+        // Exponential distribution for inter-arrival times
+        const interval = -Math.log(1 - Math.random()) / lambda * 1000; // Convert to milliseconds
+        cumulativeTime += interval;
+        
+        if (cumulativeTime <= simulationDuration * 1000) {
+          setTimeout(() => {
+            spawnDynamicCall(snapshotId, link, index);
+            callCount++;
+            generateNextCall(); // Schedule next call
+          }, cumulativeTime);
+        }
+      };
       
-      window.simulationTimers[`${snapshotId}-${index}`] = timer;
+      // Start generating calls
+      generateNextCall();
     });
 
     // Start metrics update with reduced frequency
@@ -277,12 +360,9 @@
     const currentActiveCalls = data.activeCalls;
     const maxCalls = link.maxConcurrentCalls;
     
-    // Simulate blocking based on Erlang-B formula
-    // Blocking probability increases as system approaches capacity
-    const utilization = currentActiveCalls / maxCalls;
-    const baseBlocking = link.blockingProb * 0.5; // 50% of base blocking probability even at low utilization
-    const utilizationBlocking = link.blockingProb * Math.pow(utilization, 1.5); // Less aggressive than cubic but more than quadratic
-    const blockingProbability = Math.min(0.98, baseBlocking + utilizationBlocking); // Cap at 98% to ensure some calls get through
+    // Simulate blocking using proper Erlang-B formula
+    const offeredLoad = link.rate * (180 / 3600); // Convert calls/min to Erlangs (3-minute calls)
+    const blockingProbability = calculateBlockingProbability(currentActiveCalls, maxCalls, offeredLoad);
     const isBlocked = Math.random() < blockingProbability;
     
     const callId = (link.callId || 0) + 1;
@@ -290,7 +370,8 @@
     
     // Debug logging for blocking
     if (Math.random() < 0.3) { // Log 30% of calls for debugging
-      console.log(`Call ${callId}: utilization=${utilization.toFixed(2)}, baseBlocking=${(baseBlocking * 100).toFixed(1)}%, utilizationBlocking=${(utilizationBlocking * 100).toFixed(1)}%, totalBlocking=${(blockingProbability * 100).toFixed(1)}%, isBlocked=${isBlocked}`);
+      const offeredLoad = link.rate * (180 / 3600); // Convert calls/min to Erlangs
+      console.log(`Call ${callId}: activeCalls=${currentActiveCalls}, maxCalls=${maxCalls}, offeredLoad=${offeredLoad.toFixed(2)}E, blockingProb=${(blockingProbability * 100).toFixed(1)}%, isBlocked=${isBlocked}`);
     }
 
     if (isBlocked) {
@@ -310,9 +391,8 @@
     }
     data.linkCallCounts[linkIndex]++;
     
-    // Add bandwidth randomization (±15% variation)
-    const bandwidthVariation = 0.85 + Math.random() * 0.3; // 0.85 to 1.15
-    const actualBandwidth = link.bandwidth * bandwidthVariation;
+    // Calculate bandwidth with protocol overhead
+    const actualBandwidth = calculateVoIPBandwidth(link.codec || 'g711', true);
     data.bandwidthUsage += actualBandwidth;
     
     // Track peak values
