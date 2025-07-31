@@ -1,3 +1,22 @@
+/* ---- BEGIN Anime helpers ---- */
+function animateDiagram(svg) {
+    const lines = svg.querySelectorAll('line');
+    anime({
+      targets: lines,
+      strokeDashoffset: [anime.setDashoffset, 0],
+      duration: 800,
+      easing: 'easeInOutSine',
+      delay: anime.stagger(120)
+    });
+  }
+  
+  function fadeIn(el) {
+    el.style.opacity = 0;
+    anime({ targets: el, opacity: [0, 1], duration: 400 });
+  }
+  /* ---- END Anime helpers ---- */
+
+
 // Constants
 const LOCATIONS = ['US', 'China', 'UK'];
 
@@ -28,6 +47,7 @@ const networkTypeRadios = document.querySelectorAll('input[name="networkType"]')
 const codecSelect = document.getElementById('codecSelect');
 const blockingProbInput = document.getElementById('blockingProb');
 const apiKeyInput = document.getElementById('apiKey');
+
 const modelSelect = document.getElementById('modelSelect');
 const refreshModelsBtn = document.getElementById('refreshModelsBtn');
 const clearApiKeyBtn = document.getElementById('clearApiKeyBtn');
@@ -579,6 +599,10 @@ function renderSnapshot(snapshot) {
   }
   
   snapshotElement.innerHTML = snapshotHtml;
+
+  const svg = snapshotElement.querySelector('.diagram-container svg');
+  animateDiagram(svg);
+  fadeIn(snapshotElement);
   
   // Add event listener to the explain button
   const explainBtn = document.getElementById(`explain-btn-${id}`);
