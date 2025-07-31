@@ -1,10 +1,9 @@
 (() => {
-  // Global simulation state
-  window.simulationRunning = false;
-  window.currentSimulationId = null;
+  // Global simulation state - support multiple simultaneous simulations
   window.simulationData = {};
   window.simulationTimers = {};
   window.simulationMetrics = {};
+  window.runningSimulations = new Set(); // Track all running simulations
 
   // Initialize simulation for each snapshot
   function initializeSimulation(snapshotId) {
@@ -65,13 +64,14 @@
       return;
     }
 
-    // Stop any other running simulation
-    if (window.simulationRunning && window.currentSimulationId !== snapshotId) {
-      stopSimulation(window.currentSimulationId);
+    // Check if this simulation is already running
+    if (window.runningSimulations.has(snapshotId)) {
+      console.log('Simulation already running for:', snapshotId);
+      return;
     }
 
-    window.simulationRunning = true;
-    window.currentSimulationId = snapshotId;
+    // Add to running simulations set
+    window.runningSimulations.add(snapshotId);
     
     startBtn.disabled = true;
     stopBtn.disabled = false;
@@ -330,10 +330,8 @@
       return;
     }
 
-    window.simulationRunning = false;
-    if (window.currentSimulationId === snapshotId) {
-      window.currentSimulationId = null;
-    }
+    // Remove from running simulations set
+    window.runningSimulations.delete(snapshotId);
     
     startBtn.disabled = false;
     stopBtn.disabled = true;
@@ -558,12 +556,17 @@
   };
 
   window.clearAllSimulations = function() {
+    // Stop all running simulations
+    window.runningSimulations.forEach(snapshotId => {
+      stopSimulation(snapshotId);
+    });
+    
+    // Clear all simulation data
     Object.keys(window.simulationData).forEach(snapshotId => {
       clearSimulation(snapshotId);
     });
     window.simulationData = {};
-    window.simulationRunning = false;
-    window.currentSimulationId = null;
+    window.runningSimulations.clear();
   };
 
   // Expose initialization function for manual calls

@@ -244,12 +244,26 @@
     display: block; /* Ensure it's a block element for centering */
   }
   
-  #results > section { 
-    margin-bottom: 2rem; 
-    padding: 1.5rem; 
-    border: 1px solid var(--grey); 
-    border-radius: 4px; 
-  }
+  /* Snapshots container for side-by-side layout */
+.snapshots-container {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+
+.snapshots-container .snapshot {
+  flex: 1;
+  min-width: 400px;
+  max-width: 600px;
+}
+
+#results > section { 
+  margin-bottom: 2rem; 
+  padding: 1.5rem; 
+  border: 1px solid var(--grey); 
+  border-radius: 4px; 
+}
   
   .snapshot-header {
     display: flex;
@@ -675,6 +689,16 @@ body {
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
+  .snapshots-container {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .snapshots-container .snapshot {
+    min-width: auto;
+    max-width: none;
+  }
+  
   .metrics-grid {
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 0.8rem;

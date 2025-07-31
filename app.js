@@ -716,12 +716,21 @@ function runAnalysis() {
   // Render results
   const snapshotHtml = renderSnapshot(snapshot);
   
+  // Create or update snapshots container for side-by-side layout
+  let snapshotsContainer = document.getElementById('snapshots-container');
+  if (!snapshotsContainer) {
+    snapshotsContainer = document.createElement('div');
+    snapshotsContainer.id = 'snapshots-container';
+    snapshotsContainer.className = 'snapshots-container';
+    resultsSection.appendChild(snapshotsContainer);
+  }
+  
   // Add snapshot to DOM
   const snapshotSection = document.createElement('section');
   snapshotSection.id = `snapshot-${snapshot.id}`;
   snapshotSection.className = 'snapshot';
   snapshotSection.innerHTML = snapshotHtml;
-  resultsSection.appendChild(snapshotSection);
+  snapshotsContainer.appendChild(snapshotSection);
   
   // Initialize simulation for this snapshot
   if (window.initializeSimulation) {
@@ -982,6 +991,14 @@ function clearSnapshots() {
   
   snapshots = [];
   selectedSnapshots.clear();
+  
+  // Clear the snapshots container
+  const snapshotsContainer = document.getElementById('snapshots-container');
+  if (snapshotsContainer) {
+    snapshotsContainer.remove();
+  }
+  
+  // Clear any other content in results section
   resultsSection.innerHTML = '';
   updateCompareButton();
   
