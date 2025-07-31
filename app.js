@@ -692,6 +692,7 @@ function runAnalysis() {
   
   // Create snapshot with unique ID
   const timestamp = new Date().toLocaleString();
+  const selectedModel = modelSelect.value || 'No model selected';
   const snapshot = {
     id: Date.now() + '-' + Math.floor(Math.random() * 1000), // Unique ID with random suffix
     timestamp,
@@ -700,7 +701,7 @@ function runAnalysis() {
     blockingProb,
     trafficData,
     explanation: null,
-    modelUsed: null
+    modelUsed: selectedModel
   };
   
   snapshots.push(snapshot);

@@ -273,12 +273,14 @@
     // Simulate blocking based on Erlang-B formula
     // Blocking probability increases as system approaches capacity
     const utilization = currentActiveCalls / maxCalls;
-    const blockingProbability = link.blockingProb * Math.pow(utilization, 2); // Higher blocking as utilization increases
+    const baseBlocking = link.blockingProb * 0.1; // 10% of base blocking probability even at low utilization
+    const utilizationBlocking = link.blockingProb * Math.pow(utilization, 3); // More aggressive blocking (cubic instead of square)
+    const blockingProbability = baseBlocking + utilizationBlocking;
     const isBlocked = Math.random() < blockingProbability;
     
     // Debug logging for blocking
-    if (Math.random() < 0.1) { // Log 10% of calls for debugging
-      console.log(`Call ${callId}: utilization=${utilization.toFixed(2)}, blockingProb=${(blockingProbability * 100).toFixed(1)}%, isBlocked=${isBlocked}`);
+    if (Math.random() < 0.2) { // Log 20% of calls for debugging
+      console.log(`Call ${callId}: utilization=${utilization.toFixed(2)}, baseBlocking=${(baseBlocking * 100).toFixed(1)}%, utilizationBlocking=${(utilizationBlocking * 100).toFixed(1)}%, totalBlocking=${(blockingProbability * 100).toFixed(1)}%, isBlocked=${isBlocked}`);
     }
     
     const callId = (link.callId || 0) + 1;
