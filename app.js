@@ -176,6 +176,10 @@ function renderCallSimulationSection(snapshot) {
             <span class="param-value">3 minutes</span>
           </div>
           <div class="parameter-item">
+            <span class="param-label">Simulation Duration:</span>
+            <span class="param-value">20 seconds</span>
+          </div>
+          <div class="parameter-item">
             <span class="param-label">Bandwidth per Call:</span>
             <span class="param-value">${snapshot.networkType === 'pstn' ? '64 kbps' : (snapshot.codec === 'g729a' ? '8 kbps' : '64 kbps')}</span>
           </div>
@@ -216,7 +220,7 @@ function renderCallSimulationSection(snapshot) {
         </div>
         <div class="sim-metric">
           <span class="metric-label">Elapsed Time:</span>
-          <span id="elapsedTime-${snapshot.id}" class="metric-value">0s / 10s</span>
+          <span id="elapsedTime-${snapshot.id}" class="metric-value">0s / 20s</span>
         </div>
         <div class="sim-metric">
           <span class="metric-label">Blocked Calls:</span>
@@ -1807,7 +1811,7 @@ function showPostSimulationResults(snapshotId) {
             </div>
             <div class="summary-item">
               <span class="summary-label">Simulation Duration:</span>
-              <span class="summary-value">10 seconds</span>
+              <span class="summary-value">20 seconds</span>
             </div>
           </div>
         </div>

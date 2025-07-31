@@ -137,7 +137,7 @@
 
     // Start call generation for each link with dynamic rates and randomness
     links.forEach((link, index) => {
-      const baseInterval = Math.max(500, 1000 / link.rate); // Convert calls per minute to interval
+      const baseInterval = Math.max(200, 1000 / link.rate); // Faster call generation (min 200ms instead of 500ms)
       console.log(`Setting up dynamic timer for ${link.name} with interval: ${baseInterval}ms (${link.rate} calls/min)`);
       
       const timer = setInterval(() => {
@@ -146,7 +146,7 @@
         const actualInterval = baseInterval * randomFactor;
         
         // Randomly decide if we should spawn a call (adds more randomness)
-        if (Math.random() < 0.8) { // 80% chance to spawn
+        if (Math.random() < 0.9) { // 90% chance to spawn (increased from 80%)
           spawnDynamicCall(snapshotId, link, index);
         }
       }, baseInterval);
@@ -161,9 +161,9 @@
     
     window.simulationTimers[`${snapshotId}-metrics`] = metricsTimer;
     
-    // Auto-stop simulation after 10 seconds
+    // Auto-stop simulation after 20 seconds
     const autoStopTimer = setTimeout(() => {
-      addLogEntry(logElement, '⏰ Simulation completed (10 seconds)', '#f39c12');
+      addLogEntry(logElement, '⏰ Simulation completed (20 seconds)', '#f39c12');
       stopSimulation(snapshotId);
       
       // Show post-simulation results (protocol metrics and diagram)
@@ -179,12 +179,12 @@
         explainBtn.disabled = false;
         explainBtn.textContent = '🤖 Explain Results';
       }
-    }, 10000); // 10 seconds
+    }, 20000); // 20 seconds
     
     window.simulationTimers[`${snapshotId}-autostop`] = autoStopTimer;
     
     // Start countdown timer (silent - no log entries)
-    let timeRemaining = 10;
+    let timeRemaining = 20;
     const countdownTimer = setInterval(() => {
       timeRemaining--;
       // No log entries for countdown - keep logs focused on call events
@@ -273,9 +273,9 @@
     // Simulate blocking based on Erlang-B formula
     // Blocking probability increases as system approaches capacity
     const utilization = currentActiveCalls / maxCalls;
-    const baseBlocking = link.blockingProb * 0.1; // 10% of base blocking probability even at low utilization
-    const utilizationBlocking = link.blockingProb * Math.pow(utilization, 3); // More aggressive blocking (cubic instead of square)
-    const blockingProbability = baseBlocking + utilizationBlocking;
+    const baseBlocking = link.blockingProb * 0.3; // 30% of base blocking probability even at low utilization
+    const utilizationBlocking = link.blockingProb * Math.pow(utilization, 2); // Quadratic blocking
+    const blockingProbability = Math.min(0.95, baseBlocking + utilizationBlocking); // Cap at 95% to ensure some calls get through
     const isBlocked = Math.random() < blockingProbability;
     
     // Debug logging for blocking
@@ -410,10 +410,10 @@
       const elapsedTimeElement = document.getElementById(`elapsedTime-${snapshotId}`);
       const progressBarElement = document.getElementById(`progressBar-${snapshotId}`);
       if (elapsedTimeElement && data.startTime) {
-        const elapsed = Math.min(10, Math.floor((performance.now() - data.startTime) / 1000));
-        const progressPercent = (elapsed / 10) * 100;
+        const elapsed = Math.min(20, Math.floor((performance.now() - data.startTime) / 1000));
+        const progressPercent = (elapsed / 20) * 100;
         updates.push(() => {
-          elapsedTimeElement.textContent = `${elapsed}s / 10s`;
+          elapsedTimeElement.textContent = `${elapsed}s / 20s`;
           if (progressBarElement) {
             progressBarElement.style.width = `${progressPercent}%`;
           }
