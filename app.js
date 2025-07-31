@@ -737,7 +737,11 @@ function runAnalysis() {
     snapshots.forEach(snapshot => {
       selectedSnapshots.add(snapshot.id);
       const checkbox = document.querySelector(`#snapshot-${snapshot.id} .snapshot-checkbox`);
-      if (checkbox) checkbox.checked = true;
+      if (checkbox) {
+        checkbox.checked = true;
+        // Trigger change event to update UI
+        checkbox.dispatchEvent(new Event('change'));
+      }
     });
     updateCompareButton();
   }
@@ -760,11 +764,11 @@ function renderSnapshot(snapshot) {
         </div>
         <div class="snapshot-controls">
           <label class="checkbox-container">
-            <input type="checkbox" class="snapshot-checkbox" data-snapshot-id="${id}">
+            <input type="checkbox" class="snapshot-checkbox" data-snapshot-id="${id}" ${selectedSnapshots.has(id) ? 'checked' : ''}>
             <span class="checkmark"></span>
             Select for comparison
           </label>
-          <button onclick="explainResults('${id}')" class="explain-btn">🤖 Explain Results</button>
+          <button onclick="explainResults('${id}')" class="explain-btn" id="explain-btn-${id}" disabled>🤖 Explain Results (Run simulation first)</button>
         </div>
       </div>
       
@@ -830,6 +834,13 @@ async function explainResults(snapshotId) {
   const snapshot = snapshots.find(s => s.id === snapshotId);
   if (!snapshot) return;
   
+  // Check if simulation has been run
+  const explainBtn = document.getElementById(`explain-btn-${snapshotId}`);
+  if (explainBtn && explainBtn.disabled) {
+    alert('Please run the simulation first before requesting AI analysis.');
+    return;
+  }
+  
   // Check if explanation already exists
   const existingExplanation = document.getElementById(`explanation-${snapshotId}`);
   if (existingExplanation) {
@@ -851,11 +862,11 @@ async function explainResults(snapshotId) {
   }
   
   // Show loading state
-  const explainBtn = document.querySelector(`#snapshot-${snapshotId} .explain-btn`);
-  if (explainBtn) {
-    const originalText = explainBtn.textContent;
-    explainBtn.innerHTML = '<span class="loading-spinner"></span> Explaining...';
-    explainBtn.disabled = true;
+  const explainBtnElement = document.querySelector(`#snapshot-${snapshotId} .explain-btn`);
+  if (explainBtnElement) {
+    const originalText = explainBtnElement.textContent;
+    explainBtnElement.innerHTML = '<span class="loading-spinner"></span> Explaining...';
+    explainBtnElement.disabled = true;
   }
   
   try {
@@ -951,9 +962,9 @@ async function explainResults(snapshotId) {
     resultsSection.innerHTML += `<div class="error-message">Error explaining results: ${error.message}</div>`;
     
     // Reset button state
-    if (explainBtn) {
-      explainBtn.textContent = originalText;
-      explainBtn.disabled = false;
+    if (explainBtnElement) {
+      explainBtnElement.textContent = originalText;
+      explainBtnElement.disabled = false;
     }
   }
 }

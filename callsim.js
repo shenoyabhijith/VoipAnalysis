@@ -172,6 +172,13 @@
           window.showPostSimulationResults(snapshotId);
         }, 500);
       }
+      
+      // Enable AI summary button after simulation completes
+      const explainBtn = document.getElementById(`explain-btn-${snapshotId}`);
+      if (explainBtn) {
+        explainBtn.disabled = false;
+        explainBtn.textContent = '🤖 Explain Results';
+      }
     }, 10000); // 10 seconds
     
     window.simulationTimers[`${snapshotId}-autostop`] = autoStopTimer;
@@ -336,6 +343,13 @@
     
     // Final metrics update
     updateSimulationMetrics(snapshotId);
+    
+    // Enable AI summary button after simulation stops
+    const explainBtn = document.getElementById(`explain-btn-${snapshotId}`);
+    if (explainBtn) {
+      explainBtn.disabled = false;
+      explainBtn.textContent = '🤖 Explain Results';
+    }
     
     console.log('Simulation stopped for:', snapshotId);
   }
