@@ -25,14 +25,24 @@
       denominator += Math.pow(offeredLoad, i) / factorial(i);
     }
     
-    return numerator / denominator;
+    const result = numerator / denominator;
+    
+    // DEBUG: Log Erlang-B calculation
+    console.log(`📊 ERLANG-B DEBUG: offeredLoad=${offeredLoad.toFixed(2)}, capacity=${capacity}, numerator=${numerator.toExponential(3)}, denominator=${denominator.toExponential(3)}, result=${(result * 100).toFixed(6)}%`);
+    
+    return result;
   }
 
   // Calculate blocking probability using proper Erlang-B
   function calculateBlockingProbability(activeCalls, maxCalls, offeredLoad) {
     // Offered load = call arrival rate × average call duration
     const currentOfferedLoad = offeredLoad * (activeCalls / maxCalls);
-    return erlangBBlocking(currentOfferedLoad, maxCalls);
+    const blockingProb = erlangBBlocking(currentOfferedLoad, maxCalls);
+    
+    // DEBUG: Log blocking calculation
+    console.log(`🔍 BLOCKING DEBUG: activeCalls=${activeCalls}, maxCalls=${maxCalls}, offeredLoad=${offeredLoad.toFixed(2)}, currentOfferedLoad=${currentOfferedLoad.toFixed(2)}, blockingProb=${(blockingProb * 100).toFixed(3)}%`);
+    
+    return blockingProb;
   }
 
   // Calculate VoIP bandwidth with protocol overhead
@@ -232,11 +242,15 @@
         cumulativeTime += interval;
         
         if (cumulativeTime <= simulationDuration * 1000) {
+          console.log(`📞 CALL SCHEDULED: link=${link.name}, time=${cumulativeTime}ms, callCount=${callCount + 1}`);
           setTimeout(() => {
+            console.log(`🚀 SPAWNING CALL: link=${link.name}, callCount=${callCount + 1}`);
             spawnDynamicCall(snapshotId, link, index);
             callCount++;
             generateNextCall(); // Schedule next call
           }, cumulativeTime);
+        } else {
+          console.log(`⏹️ CALL GENERATION COMPLETE: link=${link.name}, totalCalls=${callCount}`);
         }
       };
       
@@ -353,8 +367,14 @@
   }
 
   function spawnDynamicCall(snapshotId, link, linkIndex) {
+    console.log(`🎯 SPAWN DYNAMIC CALL: snapshotId=${snapshotId}, link=${link.name}, linkIndex=${linkIndex}`);
     const logElement = document.getElementById(`simLog-${snapshotId}`);
     const data = window.simulationData[snapshotId];
+    
+    if (!data) {
+      console.log(`❌ NO SIMULATION DATA: snapshotId=${snapshotId}`);
+      return;
+    }
     
     // Check if we can accept more calls (blocking simulation)
     const currentActiveCalls = data.activeCalls;
