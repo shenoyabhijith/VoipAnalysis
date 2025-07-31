@@ -1,6 +1,6 @@
 # VoIP Analysis Tool - Deployment Guide
 
-This guide will walk you through creating a private GitHub repository and deploying your VoIP Analysis Tool to GitHub Pages.
+This guide will walk you through creating a private GitHub repository and deploying your VoIP Analysis Tool to GitHub Pages using automatic GitHub Actions.
 
 ## Prerequisites
 
@@ -35,7 +35,7 @@ git remote add origin https://github.com/YOUR_USERNAME/VoipAnalysis.git
 git push -u origin main
 ```
 
-## Step 3: Enable GitHub Pages
+## Step 3: Enable GitHub Pages with GitHub Actions
 
 1. **Go to Repository Settings**:
    - Navigate to your `VoipAnalysis` repository on GitHub
@@ -43,13 +43,11 @@ git push -u origin main
 
 2. **Configure Pages**:
    - Scroll down to "Pages" in the left sidebar
-   - Under "Source", select "Deploy from a branch"
-   - Choose "main" branch
-   - Select "/ (root)" folder
-   - Click "Save"
+   - Under "Source", select "GitHub Actions"
+   - This will use the automatic deployment workflow
 
 3. **Wait for Deployment**:
-   - GitHub will automatically deploy your site
+   - GitHub Actions will automatically deploy your site
    - You'll see a green checkmark when deployment is complete
    - Your site will be available at: `https://YOUR_USERNAME.github.io/VoipAnalysis`
 
@@ -58,6 +56,7 @@ git push -u origin main
 1. **Check GitHub Actions**:
    - Go to the "Actions" tab in your repository
    - You should see a successful deployment workflow
+   - The workflow runs automatically on every push to main branch
 
 2. **Test Your Site**:
    - Visit `https://YOUR_USERNAME.github.io/VoipAnalysis`
@@ -75,7 +74,14 @@ git commit -m "Description of your changes"
 git push origin main
 ```
 
-GitHub will automatically redeploy your site when you push changes.
+GitHub Actions will automatically redeploy your site when you push changes to the main branch.
+
+## Automatic Deployment Features
+
+- **GitHub Actions Workflow**: Located in `.github/workflows/deploy.yml`
+- **Automatic Triggers**: Deploys on every push to main branch
+- **Manual Deployment**: Can also be triggered manually from Actions tab
+- **Error Handling**: Comprehensive error messages and troubleshooting
 
 ## Troubleshooting
 
@@ -88,7 +94,7 @@ GitHub will automatically redeploy your site when you push changes.
 
 2. **404 errors**:
    - Make sure `index.html` is in the root directory
-   - Check that the branch and folder settings are correct in Pages settings
+   - Check that GitHub Pages is configured to use GitHub Actions
 
 3. **Styling issues**:
    - Ensure all CSS and JavaScript files are properly linked
@@ -109,8 +115,8 @@ GitHub will automatically redeploy your site when you push changes.
 ## Support
 
 If you encounter issues:
-1. Check the GitHub Actions logs
+1. Check the GitHub Actions logs in the Actions tab
 2. Verify all files are properly committed
 3. Ensure the repository settings are correct
 
-Your VoIP Analysis Tool should now be successfully deployed and accessible via GitHub Pages! 
+Your VoIP Analysis Tool should now be successfully deployed and accessible via GitHub Pages with automatic deployments! 

@@ -18,6 +18,13 @@
     font-weight: 600; 
   }
   
+  .subtitle {
+    color: #666;
+    margin-top: -0.5rem;
+    margin-bottom: 2rem;
+    font-size: 1.1rem;
+  }
+  
   button { 
     padding: 0.6rem 1.2rem; 
     background: var(--accent); 
@@ -26,6 +33,23 @@
     cursor: pointer; 
     font-size: 1rem;
     margin: 1rem 0;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+  }
+  
+  button:hover {
+    background: #1565c0;
+  }
+  
+  button.primary-btn {
+    background: #2e7d32;
+    font-size: 1.1rem;
+    padding: 0.8rem 1.5rem;
+    font-weight: 600;
+  }
+  
+  button.primary-btn:hover {
+    background: #1b5e20;
   }
   
   button.secondary {
@@ -34,6 +58,10 @@
     font-size: 0.9rem;
     padding: 0.4rem 0.8rem;
     margin: 0.5rem 0.5rem 0.5rem 0;
+  }
+  
+  button.secondary:hover {
+    background: #d5d5d5;
   }
   
   button:disabled {
@@ -65,6 +93,50 @@
     margin-top: 0.25rem;
   }
   
+  .input-group small a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  
+  .input-group small a:hover {
+    text-decoration: underline;
+  }
+  
+  .api-key-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    max-width: 400px;
+  }
+  
+  .api-key-container input {
+    flex: 1;
+  }
+  
+  .api-key-link {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: #4caf50;
+    color: white;
+    text-decoration: none;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+    white-space: nowrap;
+  }
+  
+  .api-key-link:hover {
+    background: #388e3c;
+    text-decoration: none;
+  }
+  
+  .link-icon {
+    font-size: 1rem;
+  }
+  
   .radio-group {
     display: flex;
     gap: 1rem;
@@ -85,6 +157,34 @@
     max-width: 300px;
   }
   
+  .comparison-instructions {
+    margin: 1.5rem 0;
+  }
+  
+  .instruction-box {
+    background: #e3f2fd;
+    border: 1px solid #bbdefb;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .instruction-box h3 {
+    margin-top: 0;
+    color: #1976d2;
+    font-size: 1.2rem;
+  }
+  
+  .instruction-box ol {
+    margin: 1rem 0 0 0;
+    padding-left: 1.5rem;
+  }
+  
+  .instruction-box li {
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+  }
+  
   table { 
     border-collapse: collapse; 
     margin: 1.5rem 0; 
@@ -98,36 +198,34 @@
     text-align: left;
   }
   
-  td.numeric {
-    text-align: right;
-  }
-  
   th {
     background: var(--grey);
     font-weight: 600;
   }
   
   svg { 
-    width: 100%; 
-    max-width: 600px; 
+    max-width: 100%; 
     height: auto; 
-    margin: 1.5rem 0;
-    background: #f9f9f9;
-    border: 1px solid var(--grey);
-    border-radius: 4px;
+    margin: 1rem 0; 
   }
   
   #results > section { 
-    margin-top: 2.5rem; 
-    padding-top: 1rem;
-    border-top: 1px solid var(--grey);
+    margin-bottom: 2rem; 
+    padding: 1.5rem; 
+    border: 1px solid var(--grey); 
+    border-radius: 4px; 
   }
   
   .snapshot-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: 1rem;
     margin-bottom: 1rem;
+  }
+  
+  .snapshot-header h2 {
+    margin: 0;
+    flex: 1;
   }
   
   .timestamp {
@@ -140,86 +238,95 @@
   }
   
   .diagram-container {
-    display: flex;
-    justify-content: center;
+    text-align: center;
     margin: 1.5rem 0;
   }
   
   summary {
-    font-weight: 600;
     cursor: pointer;
-    margin: 1rem 0;
+    font-weight: 600;
+    color: var(--accent);
   }
   
   details[open] summary {
-    margin-bottom: 0.5rem;
+    margin-bottom: 1rem;
   }
   
   .error-message {
-    color: #d32f2f;
-    margin: 1rem 0;
-    padding: 0.5rem;
     background: #ffebee;
+    color: #c62828;
+    padding: 1rem;
     border-radius: 4px;
+    margin: 1rem 0;
+    border: 1px solid #ffcdd2;
   }
   
   .explanation-section {
     background: #f5f5f5;
-    padding: 1.5rem;
-    border-radius: 4px;
-    margin-top: 1.5rem;
-    position: relative;
+    border-radius: 8px;
+    margin: 1.5rem 0;
+    overflow: hidden;
   }
   
   .explanation-header {
+    background: var(--accent);
+    color: white;
+    padding: 1rem 1.5rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
+  }
+  
+  .explanation-header h3, .explanation-header h4 {
+    margin: 0;
   }
   
   .explanation-content {
-    line-height: 1.6;
+    padding: 1.5rem;
   }
   
   .explanation-content h1, .explanation-content h2, .explanation-content h3 {
-    margin-top: 1rem;
+    color: #333;
+    margin-top: 1.5rem;
     margin-bottom: 0.5rem;
   }
   
   .explanation-content p {
+    line-height: 1.6;
     margin-bottom: 1rem;
   }
   
   .explanation-content ul, .explanation-content ol {
-    margin-bottom: 1rem;
-    padding-left: 2rem;
+    margin: 1rem 0;
+    padding-left: 1.5rem;
   }
   
   .explanation-content li {
     margin-bottom: 0.5rem;
+    line-height: 1.4;
   }
   
   .explanation-content code {
-    background: #e0e0e0;
+    background: #f0f0f0;
     padding: 0.2rem 0.4rem;
     border-radius: 3px;
-    font-family: monospace;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
   }
   
   .explanation-content pre {
-    background: #e0e0e0;
+    background: #f5f5f5;
     padding: 1rem;
     border-radius: 4px;
     overflow-x: auto;
-    margin-bottom: 1rem;
+    margin: 1rem 0;
   }
   
   .explanation-content blockquote {
     border-left: 4px solid var(--accent);
     padding-left: 1rem;
     margin: 1rem 0;
-    color: #555;
+    color: #666;
   }
   
   .explanation-content strong {
@@ -234,10 +341,11 @@
     display: inline-block;
     width: 16px;
     height: 16px;
-    border: 2px solid rgba(25, 118, 210, 0.3);
+    border: 2px solid #ffffff;
     border-radius: 50%;
-    border-top-color: var(--accent);
+    border-top-color: transparent;
     animation: spin 1s ease-in-out infinite;
+    margin-right: 0.5rem;
   }
   
   @keyframes spin {
@@ -245,29 +353,40 @@
   }
   
   footer {
-    margin-top: 2rem;
-    padding-top: 1rem;
+    margin-top: 3rem;
+    padding-top: 2rem;
     border-top: 1px solid var(--grey);
-    font-size: 0.8rem;
-    color: #666;
     text-align: center;
+    color: #666;
+  }
+  
+  .footer-links {
+    margin-top: 0.5rem;
+  }
+  
+  .footer-links a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  
+  .footer-links a:hover {
+    text-decoration: underline;
   }
   
   .snapshot-checkbox {
     margin-right: 0.5rem;
   }
   
-  /* Print styles */
   @media print {
     button, .action-buttons, footer, .explanation-section {
       display: none;
     }
+    
     table {
-      border: 1px solid black;
-      background: white;
+      font-size: 0.8rem;
     }
+    
     th, td {
-      border: 1px solid black;
-      background: white;
+      padding: 0.3rem;
     }
   }

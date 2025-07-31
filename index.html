@@ -8,6 +8,7 @@
 <body>
   <header>
     <h1>PSTN &amp; VoIP Traffic Lab</h1>
+    <p class="subtitle">Analyze network traffic patterns and bandwidth requirements</p>
   </header>
   
   <section id="inputs">
@@ -25,25 +26,34 @@
         <option value="g711">G.711 (64 kbps)</option>
         <option value="g729a">G.729a (8 kbps)</option>
       </select>
+      <small>Select codec for VoIP analysis</small>
     </div>
     
     <div class="input-group">
       <label for="blockingProb">Blocking Probability:</label>
       <input type="number" id="blockingProb" min="0.001" max="0.1" step="0.001" value="0.01">
+      <small>Enter a value between 0.001 and 0.1 (e.g., 0.01 = 1%)</small>
     </div>
     
     <div class="input-group">
       <label for="apiKey">Gemini API Key:</label>
-      <input type="password" id="apiKey" placeholder="Enter your Gemini API key">
-      <small>For explaining results (stored locally)</small>
+      <div class="api-key-container">
+        <input type="password" id="apiKey" placeholder="Enter your Gemini API key">
+        <a href="https://aistudio.google.com/app/apikey" target="_blank" class="api-key-link" title="Get your free Gemini API key">
+          <span class="link-icon">🔑</span>
+          Get API Key
+        </a>
+      </div>
+      <small>Required for AI explanations and model selection. <a href="https://aistudio.google.com/app/apikey" target="_blank">Get your free API key here</a></small>
     </div>
     
     <div class="input-group">
       <label for="modelSelect">Gemini Model:</label>
       <select id="modelSelect">
-        <option value="">Loading models...</option>
+        <option value="">Enter API key to load models</option>
       </select>
       <button id="refreshModelsBtn" class="secondary">Refresh Models</button>
+      <small>Select a model for AI-powered explanations</small>
     </div>
     
     <div class="input-group">
@@ -51,18 +61,35 @@
     </div>
   </section>
   
-  <button id="runBtn">Run Analysis</button>
+  <button id="runBtn" class="primary-btn">Run Analysis</button>
   
   <section id="results">
     <!-- Dynamically injected -->
   </section>
+  
+  <div class="comparison-instructions" id="comparisonInstructions" style="display: none;">
+    <div class="instruction-box">
+      <h3>📊 How to Compare Analyses</h3>
+      <ol>
+        <li>Run multiple analyses using different settings</li>
+        <li>Check the boxes next to the analyses you want to compare (max 2)</li>
+        <li>Click "Compare Selected" to see side-by-side results</li>
+        <li>Use AI comparison summary for detailed insights</li>
+      </ol>
+    </div>
+  </div>
   
   <div class="action-buttons">
     <button id="compareBtn" class="secondary" disabled>Compare Selected (0/2)</button>
     <button id="clearBtn" class="secondary">Clear Snapshots</button>
   </div>
   
-  <footer>Analysis engine: Google Gemini.</footer>
+  <footer>
+    <p>Analysis engine: Google Gemini</p>
+    <p class="footer-links">
+      <a href="https://aistudio.google.com/app/apikey" target="_blank">Get Gemini API Key</a> 
+    </p>
+  </footer>
   
   <script src="app.js"></script>
 </body>

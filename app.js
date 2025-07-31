@@ -633,6 +633,12 @@ function runAnalysis() {
   // Render results
   renderSnapshot(snapshot);
   
+  // Show comparison instructions if this is the first snapshot
+  const comparisonInstructions = document.getElementById('comparisonInstructions');
+  if (snapshots.length === 1 && comparisonInstructions) {
+    comparisonInstructions.style.display = 'block';
+  }
+  
   // Scroll to results
   resultsSection.scrollIntoView({ behavior: 'smooth' });
 }
@@ -840,6 +846,12 @@ function clearSnapshots() {
   selectedSnapshots.clear();
   resultsSection.innerHTML = '';
   updateCompareButton();
+  
+  // Hide comparison instructions when all snapshots are cleared
+  const comparisonInstructions = document.getElementById('comparisonInstructions');
+  if (comparisonInstructions) {
+    comparisonInstructions.style.display = 'none';
+  }
 }
 
 async function compareSelected() {
