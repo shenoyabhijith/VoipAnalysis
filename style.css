@@ -213,18 +213,18 @@
   .chart-container {
     margin: 2rem 0;
     text-align: center;
-    background: #f9f9f9;
-    border-radius: 8px;
-    padding: 1rem;
-    border: 1px solid var(--grey);
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid #dee2e6;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   }
   
   .chart-container svg {
     max-width: 100%;
     height: auto;
-    background: white;
-    border-radius: 4px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   }
   
   .chart-message {

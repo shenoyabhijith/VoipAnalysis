@@ -774,9 +774,9 @@ function generateEfficiencyChart(snapshot1, snapshot2) {
     }
     
     // Create a chart comparing bandwidth efficiency
-    const width = 800; // Increased width for better spacing
-    const height = 400;
-    const margin = { top: 40, right: 30, bottom: 80, left: 60 }; // Increased bottom margin for rotated labels
+    const width = 900;
+    const height = 500;
+    const margin = { top: 60, right: 80, bottom: 100, left: 80 };
     const chartWidth = width - margin.left - margin.right;
     const chartHeight = height - margin.top - margin.bottom;
     
@@ -803,38 +803,50 @@ function generateEfficiencyChart(snapshot1, snapshot2) {
     });
     
     // Add some padding to the max
-    maxBandwidth *= 1.1;
+    maxBandwidth = Math.ceil(maxBandwidth * 1.2);
     
     // Calculate bar width and spacing
-    const barWidth = 30; // Fixed bar width
-    const groupWidth = barWidth * 2 + 10; // Two bars plus spacing
-    const spacing = (chartWidth - (groupWidth * linkArray.length)) / (linkArray.length + 1);
+    const barWidth = 35;
+    const groupSpacing = 15;
+    const groupWidth = barWidth * 2 + groupSpacing;
+    const totalGroupsWidth = groupWidth * linkArray.length;
+    const spacing = (chartWidth - totalGroupsWidth) / (linkArray.length + 1);
     
     let svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`;
     
-    // Add title with better styling
-    svg += `<text x="${width/2}" y="25" text-anchor="middle" font-size="20" font-weight="bold" fill="#333">Bandwidth Efficiency Comparison</text>`;
-    svg += `<text x="${width/2}" y="45" text-anchor="middle" font-size="12" fill="#666">Analysis 1 vs Analysis 2</text>`;
+    // Add background
+    svg += `<rect width="${width}" height="${height}" fill="#fafafa"/>`;
     
-    // Add chart area
+    // Add title
+    svg += `<text x="${width/2}" y="30" text-anchor="middle" font-size="24" font-weight="bold" fill="#2c3e50">Bandwidth Efficiency Comparison</text>`;
+    svg += `<text x="${width/2}" y="50" text-anchor="middle" font-size="14" fill="#7f8c8d">Analysis 1 vs Analysis 2</text>`;
+    
+    // Add chart area with background
     svg += `<g transform="translate(${margin.left},${margin.top})">`;
+    svg += `<rect width="${chartWidth}" height="${chartHeight}" fill="white" stroke="#e0e0e0" stroke-width="1" rx="8"/>`;
+    
+    // Add grid lines
+    for (let i = 0; i <= 5; i++) {
+      const y = (i * chartHeight / 5);
+      svg += `<line x1="0" y1="${y}" x2="${chartWidth}" y2="${y}" stroke="#f0f0f0" stroke-width="1"/>`;
+    }
     
     // Add X axis
-    svg += `<line x1="0" y1="${chartHeight}" x2="${chartWidth}" y2="${chartHeight}" stroke="#333" stroke-width="1"/>`;
+    svg += `<line x1="0" y1="${chartHeight}" x2="${chartWidth}" y2="${chartHeight}" stroke="#34495e" stroke-width="2"/>`;
     
     // Add Y axis
-    svg += `<line x1="0" y1="0" x2="0" y2="${chartHeight}" stroke="#333" stroke-width="1"/>`;
+    svg += `<line x1="0" y1="0" x2="0" y2="${chartHeight}" stroke="#34495e" stroke-width="2"/>`;
     
-    // Add Y axis labels
+    // Add Y axis labels and tick marks
     for (let i = 0; i <= 5; i++) {
       const y = chartHeight - (i * chartHeight / 5);
-      const value = (i * maxBandwidth / 5).toFixed(2);
-      svg += `<line x1="-5" y1="${y}" x2="0" y2="${y}" stroke="#333" stroke-width="1"/>`;
-      svg += `<text x="-10" y="${y+5}" text-anchor="end" font-size="12">${value} Mbps</text>`;
+      const value = (i * maxBandwidth / 5).toFixed(1);
+      svg += `<line x1="-8" y1="${y}" x2="0" y2="${y}" stroke="#34495e" stroke-width="1"/>`;
+      svg += `<text x="-15" y="${y+4}" text-anchor="end" font-size="12" font-weight="500" fill="#2c3e50">${value}</text>`;
     }
     
     // Add Y axis title
-    svg += `<text x="-40" y="${chartHeight/2}" text-anchor="middle" font-size="14" transform="rotate(-90, -40, ${chartHeight/2})">Bandwidth (Mbps)</text>`;
+    svg += `<text x="-50" y="${chartHeight/2}" text-anchor="middle" font-size="14" font-weight="bold" fill="#2c3e50" transform="rotate(-90, -50, ${chartHeight/2})">Bandwidth (Mbps)</text>`;
     
     // Add bars and labels for each link
     linkArray.forEach((link, index) => {
@@ -858,45 +870,43 @@ function generateEfficiencyChart(snapshot1, snapshot2) {
       const height1 = (bandwidth1 / maxBandwidth) * chartHeight;
       const height2 = (bandwidth2 / maxBandwidth) * chartHeight;
       
-      // Draw bars
-      svg += `<rect x="${x}" y="${chartHeight - height1}" width="${barWidth}" height="${height1}" fill="#1976d2"/>`;
-      svg += `<rect x="${x + barWidth + 10}" y="${chartHeight - height2}" width="${barWidth}" height="${height2}" fill="#4caf50"/>`;
+      // Draw bars with rounded corners and shadows
+      svg += `<rect x="${x}" y="${chartHeight - height1}" width="${barWidth}" height="${height1}" fill="#3498db" rx="3" ry="3"/>`;
+      svg += `<rect x="${x + barWidth + groupSpacing}" y="${chartHeight - height2}" width="${barWidth}" height="${height2}" fill="#2ecc71" rx="3" ry="3"/>`;
       
-      // Add link label with better styling
-      svg += `<text x="${x + groupWidth/2}" y="${chartHeight + 65}" text-anchor="middle" font-size="12" font-weight="500" fill="#333" transform="rotate(-45, ${x + groupWidth/2}, ${chartHeight + 65})">${link}</text>`;
+      // Add link label
+      svg += `<text x="${x + groupWidth/2}" y="${chartHeight + 25}" text-anchor="middle" font-size="13" font-weight="600" fill="#2c3e50">${link}</text>`;
       
-      // Add bandwidth values on top of bars with better styling
-      if (height1 > 20) {
-        svg += `<rect x="${x - 3}" y="${chartHeight - height1 - 22}" width="${barWidth + 6}" height="20" fill="white" stroke="#1976d2" stroke-width="1" rx="2"/>`;
-        svg += `<text x="${x + barWidth/2}" y="${chartHeight - height1 - 7}" text-anchor="middle" font-size="11" font-weight="bold" fill="#1976d2">${bandwidth1.toFixed(2)}</text>`;
+      // Add bandwidth values on top of bars
+      if (height1 > 25) {
+        svg += `<rect x="${x - 2}" y="${chartHeight - height1 - 25}" width="${barWidth + 4}" height="22" fill="white" stroke="#3498db" stroke-width="1.5" rx="3"/>`;
+        svg += `<text x="${x + barWidth/2}" y="${chartHeight - height1 - 10}" text-anchor="middle" font-size="11" font-weight="bold" fill="#3498db">${bandwidth1.toFixed(2)}</text>`;
       } else {
-        // Place the label above the bar if there's not enough space
-        svg += `<text x="${x + barWidth/2}" y="${chartHeight - height1 - 5}" text-anchor="middle" font-size="11" font-weight="bold" fill="#1976d2">${bandwidth1.toFixed(2)}</text>`;
+        svg += `<text x="${x + barWidth/2}" y="${chartHeight - height1 - 8}" text-anchor="middle" font-size="11" font-weight="bold" fill="#3498db">${bandwidth1.toFixed(2)}</text>`;
       }
       
-      if (height2 > 20) {
-        svg += `<rect x="${x + barWidth + 7}" y="${chartHeight - height2 - 22}" width="${barWidth + 6}" height="20" fill="white" stroke="#4caf50" stroke-width="1" rx="2"/>`;
-        svg += `<text x="${x + barWidth + 10 + barWidth/2}" y="${chartHeight - height2 - 7}" text-anchor="middle" font-size="11" font-weight="bold" fill="#4caf50">${bandwidth2.toFixed(2)}</text>`;
+      if (height2 > 25) {
+        svg += `<rect x="${x + barWidth + groupSpacing - 2}" y="${chartHeight - height2 - 25}" width="${barWidth + 4}" height="22" fill="white" stroke="#2ecc71" stroke-width="1.5" rx="3"/>`;
+        svg += `<text x="${x + barWidth + groupSpacing + barWidth/2}" y="${chartHeight - height2 - 10}" text-anchor="middle" font-size="11" font-weight="bold" fill="#2ecc71">${bandwidth2.toFixed(2)}</text>`;
       } else {
-        // Place the label above the bar if there's not enough space
-        svg += `<text x="${x + barWidth + 10 + barWidth/2}" y="${chartHeight - height2 - 5}" text-anchor="middle" font-size="11" font-weight="bold" fill="#4caf50">${bandwidth2.toFixed(2)}</text>`;
+        svg += `<text x="${x + barWidth + groupSpacing + barWidth/2}" y="${chartHeight - height2 - 8}" text-anchor="middle" font-size="11" font-weight="bold" fill="#2ecc71">${bandwidth2.toFixed(2)}</text>`;
       }
     });
     
-    // Add legend with better styling and clearer labels
-    const legendX = chartWidth - 150;
-    const legendY = 10;
+    // Add legend
+    const legendX = chartWidth - 180;
+    const legendY = 20;
     
     // Legend background
-    svg += `<rect x="${legendX - 10}" y="${legendY - 5}" width="140" height="50" fill="white" stroke="#ccc" stroke-width="1" rx="4"/>`;
+    svg += `<rect x="${legendX - 15}" y="${legendY - 10}" width="170" height="70" fill="white" stroke="#bdc3c7" stroke-width="1" rx="6"/>`;
     
     // Analysis 1 legend
-    svg += `<rect x="${legendX}" y="${legendY}" width="15" height="15" fill="#1976d2"/>`;
-    svg += `<text x="${legendX + 20}" y="${legendY + 12}" font-size="12" font-weight="bold">Analysis 1</text>`;
+    svg += `<rect x="${legendX}" y="${legendY}" width="18" height="18" fill="#3498db" rx="2"/>`;
+    svg += `<text x="${legendX + 25}" y="${legendY + 13}" font-size="13" font-weight="bold" fill="#2c3e50">Analysis 1</text>`;
     
     // Analysis 2 legend
-    svg += `<rect x="${legendX}" y="${legendY + 20}" width="15" height="15" fill="#4caf50"/>`;
-    svg += `<text x="${legendX + 20}" y="${legendY + 32}" font-size="12" font-weight="bold">Analysis 2</text>`;
+    svg += `<rect x="${legendX}" y="${legendY + 25}" width="18" height="18" fill="#2ecc71" rx="2"/>`;
+    svg += `<text x="${legendX + 25}" y="${legendY + 38}" font-size="13" font-weight="bold" fill="#2c3e50">Analysis 2</text>`;
     
     svg += '</g>';
     svg += '</svg>';
