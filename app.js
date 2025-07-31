@@ -607,6 +607,13 @@ async function explainResults(snapshotId) {
   const snapshot = snapshots.find(s => s.id === snapshotId);
   if (!snapshot) return;
   
+  // Check if explanation already exists
+  const existingExplanation = document.getElementById(`explanation-${snapshotId}`);
+  if (existingExplanation) {
+    existingExplanation.scrollIntoView({ behavior: 'smooth' });
+    return;
+  }
+  
   const apiKey = apiKeyInput.value.trim();
   const selectedModel = modelSelect.value;
   
@@ -965,8 +972,25 @@ async function compareSelected() {
     return;
   }
   
+  // Check if comparison already exists for these snapshots
+  const existingComparison = document.getElementById('comparison');
+  if (existingComparison) {
+    // Check if this is the same comparison (same snapshots)
+    const currentComparisonIds = existingComparison.getAttribute('data-comparison-ids');
+    const newComparisonIds = `${selectedIds[0]}-${selectedIds[1]}`;
+    
+    if (currentComparisonIds === newComparisonIds) {
+      // Same comparison already exists, show message and scroll to it
+      existingComparison.scrollIntoView({ behavior: 'smooth' });
+      return;
+    } else {
+      // Different comparison, remove the old one
+      existingComparison.remove();
+    }
+  }
+  
   // Create comparison section
-  let comparisonHtml = '<section id="comparison"><h2>Comparison of Selected Analyses</h2>';
+  let comparisonHtml = '<section id="comparison" data-comparison-ids="' + selectedIds[0] + '-' + selectedIds[1] + '"><h2>Comparison of Selected Analyses</h2>';
   
   // Check if snapshots are identical
   if (checkIfSnapshotsAreIdentical(snapshot1, snapshot2)) {
@@ -1153,6 +1177,13 @@ async function getAiComparisonSummary(snapshot1, snapshot2) {
   
   if (!selectedModel) {
     resultsSection.innerHTML += '<div class="error-message">Please select a model to get AI comparison summary.</div>';
+    return;
+  }
+  
+  // Check if AI summary already exists
+  const existingAiSummary = document.getElementById('ai-comparison-summary');
+  if (existingAiSummary) {
+    existingAiSummary.scrollIntoView({ behavior: 'smooth' });
     return;
   }
   
