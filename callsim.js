@@ -218,44 +218,49 @@
       addLogEntry(logElement, `  • ${link.name}: ${link.rate.toFixed(2)} calls/min, max ${link.maxConcurrentCalls} calls`, '#9b59b6');
     });
 
-    // Start call generation using Poisson process
+    // Start call generation using reliable interval-based approach
     links.forEach((link, index) => {
-      // Generate call intervals using Poisson distribution
       const offeredLoad = link.rate; // calls per minute
-      const lambda = offeredLoad / 60; // calls per second
+      const callsPerSecond = offeredLoad / 60; // calls per second
       const simulationDuration = 20; // seconds
+      const expectedCalls = Math.floor(offeredLoad * simulationDuration / 60);
       
-      console.log(`Setting up Poisson call generation for ${link.name} with rate: ${offeredLoad} calls/min (λ=${lambda.toFixed(3)} calls/sec)`);
+      console.log(`🚀 SETTING UP CALL GENERATION: ${link.name}, rate=${offeredLoad} calls/min, expected=${expectedCalls} calls in 20s`);
       
-      // Generate call arrival times using exponential distribution
-      let cumulativeTime = 0;
       let callCount = 0;
-      const maxCalls = Math.floor(offeredLoad * simulationDuration / 60); // Expected calls in 20 seconds
+      let lastCallTime = 0;
       
-      const generateNextCall = () => {
-        if (callCount >= maxCalls || cumulativeTime >= simulationDuration * 1000) {
-          return; // Stop generating calls
+      // Use setInterval for reliable call generation
+      const callTimer = setInterval(() => {
+        if (callCount >= expectedCalls) {
+          console.log(`⏹️ CALL GENERATION COMPLETE: ${link.name}, totalCalls=${callCount}`);
+          clearInterval(callTimer);
+          return;
         }
         
-        // Exponential distribution for inter-arrival times
-        const interval = -Math.log(1 - Math.random()) / lambda * 1000; // Convert to milliseconds
-        cumulativeTime += interval;
+        // Calculate time since last call for realistic spacing
+        const now = Date.now();
+        const timeSinceLastCall = now - lastCallTime;
         
-        if (cumulativeTime <= simulationDuration * 1000) {
-          console.log(`📞 CALL SCHEDULED: link=${link.name}, time=${cumulativeTime}ms, callCount=${callCount + 1}`);
-          setTimeout(() => {
-            console.log(`🚀 SPAWNING CALL: link=${link.name}, callCount=${callCount + 1}`);
-            spawnDynamicCall(snapshotId, link, index);
-            callCount++;
-            generateNextCall(); // Schedule next call
-          }, cumulativeTime);
-        } else {
-          console.log(`⏹️ CALL GENERATION COMPLETE: link=${link.name}, totalCalls=${callCount}`);
+        // Generate call with exponential distribution
+        const avgInterval = 60000 / offeredLoad; // Average interval in ms
+        const randomInterval = -Math.log(1 - Math.random()) * avgInterval;
+        
+        if (timeSinceLastCall >= randomInterval) {
+          console.log(`📞 GENERATING CALL: ${link.name}, callCount=${callCount + 1}, interval=${randomInterval.toFixed(0)}ms`);
+          spawnDynamicCall(snapshotId, link, index);
+          callCount++;
+          lastCallTime = now;
         }
-      };
+      }, 100); // Check every 100ms for call generation
       
-      // Start generating calls
-      generateNextCall();
+      window.simulationTimers[`${snapshotId}-calls-${index}`] = callTimer;
+      
+      // Generate first call immediately to test
+      setTimeout(() => {
+        console.log(`🎯 IMMEDIATE TEST CALL: ${link.name}`);
+        spawnDynamicCall(snapshotId, link, index);
+      }, 500); // Generate first call after 500ms
     });
 
     // Start metrics update with reduced frequency
@@ -380,9 +385,17 @@
     const currentActiveCalls = data.activeCalls;
     const maxCalls = link.maxConcurrentCalls;
     
-    // Simulate blocking using proper Erlang-B formula
+    // Simulate blocking with fallback logic
     const offeredLoad = link.rate * (180 / 3600); // Convert calls/min to Erlangs (3-minute calls)
-    const blockingProbability = calculateBlockingProbability(currentActiveCalls, maxCalls, offeredLoad);
+    let blockingProbability = calculateBlockingProbability(currentActiveCalls, maxCalls, offeredLoad);
+    
+    // Fallback: If Erlang-B gives very low probability, use simple utilization-based blocking
+    if (blockingProbability < 0.001) {
+      const utilization = currentActiveCalls / maxCalls;
+      blockingProbability = link.blockingProb * Math.pow(utilization, 2);
+      console.log(`🔄 FALLBACK BLOCKING: utilization=${utilization.toFixed(2)}, blockingProb=${(blockingProbability * 100).toFixed(2)}%`);
+    }
+    
     const isBlocked = Math.random() < blockingProbability;
     
     const callId = (link.callId || 0) + 1;
