@@ -56,14 +56,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const id = e.target.dataset.snapshotId;
       if (e.target.checked) {
         selectedSnapshots.add(id);
-        
-        // Limit to 2 selections
-        if (selectedSnapshots.size > 2) {
-          // Remove the oldest selection
-          const oldestId = selectedSnapshots.values().next().value;
-          selectedSnapshots.delete(oldestId);
-          document.querySelector(`#snapshot-${oldestId} .snapshot-checkbox`).checked = false;
-        }
       } else {
         selectedSnapshots.delete(id);
       }
@@ -354,245 +346,94 @@ function renderSummary(text) {
 }
 
 function simpleMarkdownToHtml(markdown) {
-    // Simple markdown to HTML converter for basic formatting
-    let html = markdown;
-    
-    // Headers
-    html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
-    html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
-    html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
-    
-    // Bold
-    html = html.replace(/\*\*(.*)\*\*/g, '<strong>$1</strong>');
-    
-    // Italic
-    html = html.replace(/\*(.*)\*/g, '<em>$1</em>');
-    
-    // Code blocks
-    html = html.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
-    
-    // Inline code
-    html = html.replace(/`([^`]*)`/g, '<code>$1</code>');
-    
-    // Blockquotes
-    html = html.replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>');
-    
-    // Tables - NEW IMPLEMENTATION
-    // First, identify and process tables
-    const tableRegex = /(\|.*\|[\r\n]+)+/g;
-    html = html.replace(tableRegex, (match) => {
-      const lines = match.trim().split('\n');
-      const headerLine = lines[0];
-      const separatorLine = lines[1];
-      const dataLines = lines.slice(2);
-      
-      // Extract headers
-      const headers = headerLine.split('|').slice(1, -1).map(h => h.trim());
-      
-      // Extract data rows
-      const rows = dataLines.map(line => 
-        line.split('|').slice(1, -1).map(cell => cell.trim())
-      );
-      
-      // Build HTML table
-      let tableHtml = '<table><thead><tr>';
-      headers.forEach(header => {
-        tableHtml += `<th>${header}</th>`;
-      });
-      tableHtml += '</tr></thead><tbody>';
-      
-      rows.forEach(row => {
-        tableHtml += '<tr>';
-        row.forEach(cell => {
-          tableHtml += `<td>${cell}</td>`;
-        });
-        tableHtml += '</tr>';
-      });
-      
-      tableHtml += '</tbody></table>';
-      return tableHtml;
-    });
-    
-    // Unordered lists
-    html = html.replace(/^(.*)$/gim, function(match, content) {
-      if (content.trim().startsWith('- ')) {
-        return '<li>' + content.trim().substring(2) + '</li>';
-      }
-      return match;
-    });
-    
-    // Wrap consecutive list items in ul tags
-    html = html.replace(/(<li>.*<\/li>)(?=<li>)/g, '$1');
-    html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
-    
-    // Ordered lists
-    html = html.replace(/^(\d+)\. (.*$)/gim, '<li>$2</li>');
-    
-    // Wrap consecutive ordered list items in ol tags
-    html = html.replace(/(<li>.*<\/li>)(?=<li>)/g, '$1');
-    html = html.replace(/(<li>.*<\/li>)/s, '<ol>$1</ol>');
-    
-    // Paragraphs
-    html = html.replace(/\n\n/g, '</p><p>');
-    html = '<p>' + html + '</p>';
-    
-    // Fix nested lists
-    html = html.replace(/<\/ul>\s*<ul>/g, '');
-    html = html.replace(/<\/ol>\s*<ol>/g, '');
-    
-    return html;
-  }
+  // Simple markdown to HTML converter for basic formatting
+  let html = markdown;
   
-  async function getAiComparisonSummary(snapshot1, snapshot2) {
-    const apiKey = apiKeyInput.value.trim();
-    const selectedModel = modelSelect.value;
+  // Headers
+  html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+  html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+  html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+  
+  // Bold
+  html = html.replace(/\*\*(.*)\*\*/g, '<strong>$1</strong>');
+  
+  // Italic
+  html = html.replace(/\*(.*)\*/g, '<em>$1</em>');
+  
+  // Code blocks
+  html = html.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+  
+  // Inline code
+  html = html.replace(/`([^`]*)`/g, '<code>$1</code>');
+  
+  // Blockquotes
+  html = html.replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>');
+  
+  // Tables - NEW IMPLEMENTATION
+  // First, identify and process tables
+  const tableRegex = /(\|.*\|[\r\n]+)+/g;
+  html = html.replace(tableRegex, (match) => {
+    const lines = match.trim().split('\n');
+    const headerLine = lines[0];
+    const separatorLine = lines[1];
+    const dataLines = lines.slice(2);
     
-    if (!apiKey) {
-      resultsSection.innerHTML += '<div class="error-message">Please enter a Gemini API key to get AI comparison summary.</div>';
-      return;
-    }
+    // Extract headers
+    const headers = headerLine.split('|').slice(1, -1).map(h => h.trim());
     
-    if (!selectedModel) {
-      resultsSection.innerHTML += '<div class="error-message">Please select a model to get AI comparison summary.</div>';
-      return;
-    }
+    // Extract data rows
+    const rows = dataLines.map(line => 
+      line.split('|').slice(1, -1).map(cell => cell.trim())
+    );
     
-    // Show loading state
-    const aiSummaryBtn = document.getElementById('getAiSummaryBtn');
-    const originalText = aiSummaryBtn.textContent;
-    aiSummaryBtn.innerHTML = '<span class="loading-spinner"></span> Generating Summary...';
-    aiSummaryBtn.disabled = true;
+    // Build HTML table
+    let tableHtml = '<table><thead><tr>';
+    headers.forEach(header => {
+      tableHtml += `<th>${header}</th>`;
+    });
+    tableHtml += '</tr></thead><tbody>';
     
-    try {
-      // Format the data for the LLM
-      let prompt = `Please provide a comparison summary of the following two network traffic analyses:\n\n`;
-      
-      // First snapshot
-      prompt += `ANALYSIS 1:\n`;
-      prompt += `Network Type: ${snapshot1.networkType.toUpperCase()}\n`;
-      prompt += `Timestamp: ${snapshot1.timestamp}\n`;
-      prompt += `Blocking Probability: ${snapshot1.blockingProb}\n`;
-      
-      if (snapshot1.networkType === 'pstn') {
-        prompt += `PSTN Analysis Results:\n`;
-        prompt += `| From | To | Daily Minutes | Busy Hour Erlangs | Required Circuits | T-1 Count | Bandwidth (Mbps) |\n`;
-        
-        snapshot1.trafficData.forEach(link => {
-          prompt += `| ${link.from} | ${link.to} | ${link.dailyMinutes.toLocaleString()} | ${link.busyHourErlangs.toFixed(2)} | ${link.requiredCircuits} | ${link.t1Count} | ${link.bandwidthMbps.toFixed(2)} |\n`;
-        });
-      } else {
-        prompt += `VoIP Analysis Results:\n`;
-        prompt += `Codec: ${snapshot1.codec.toUpperCase()}\n`;
-        prompt += `| From | To | Daily Minutes | Busy Hour Erlangs | Bandwidth per Call (kbps) | Total Bandwidth (Mbps) |\n`;
-        
-        snapshot1.trafficData.forEach(link => {
-          prompt += `| ${link.from} | ${link.to} | ${link.dailyMinutes.toLocaleString()} | ${link.busyHourErlangs.toFixed(2)} | ${link.totalBandwidthPerCall.toFixed(0)} | ${link.totalBandwidthMbps.toFixed(2)} |\n`;
-        });
-      }
-      
-      // Second snapshot
-      prompt += `\nANALYSIS 2:\n`;
-      prompt += `Network Type: ${snapshot2.networkType.toUpperCase()}\n`;
-      prompt += `Timestamp: ${snapshot2.timestamp}\n`;
-      prompt += `Blocking Probability: ${snapshot2.blockingProb}\n`;
-      
-      if (snapshot2.networkType === 'pstn') {
-        prompt += `PSTN Analysis Results:\n`;
-        prompt += `| From | To | Daily Minutes | Busy Hour Erlangs | Required Circuits | T-1 Count | Bandwidth (Mbps) |\n`;
-        
-        snapshot2.trafficData.forEach(link => {
-          prompt += `| ${link.from} | ${link.to} | ${link.dailyMinutes.toLocaleString()} | ${link.busyHourErlangs.toFixed(2)} | ${link.requiredCircuits} | ${link.t1Count} | ${link.bandwidthMbps.toFixed(2)} |\n`;
-        });
-      } else {
-        prompt += `VoIP Analysis Results:\n`;
-        prompt += `Codec: ${snapshot2.codec.toUpperCase()}\n`;
-        prompt += `| From | To | Daily Minutes | Busy Hour Erlangs | Bandwidth per Call (kbps) | Total Bandwidth (Mbps) |\n`;
-        
-        snapshot2.trafficData.forEach(link => {
-          prompt += `| ${link.from} | ${link.to} | ${link.dailyMinutes.toLocaleString()} | ${link.busyHourErlangs.toFixed(2)} | ${link.totalBandwidthPerCall.toFixed(0)} | ${link.totalBandwidthMbps.toFixed(2)} |\n`;
-        });
-      }
-      
-      // Add explanations if available
-      if (snapshot1.explanation) {
-        prompt += `\nANALYSIS 1 EXPLANATION (${snapshot1.modelUsed}):\n${snapshot1.explanation}\n`;
-      }
-      
-      if (snapshot2.explanation) {
-        prompt += `\nANALYSIS 2 EXPLANATION (${snapshot2.modelUsed}):\n${snapshot2.explanation}\n`;
-      }
-      
-      prompt += `\nPlease provide a comprehensive comparison summary that:\n`;
-      prompt += `1. Highlights the key differences between these two analyses\n`;
-      prompt += `2. Explains what these differences mean in practical terms\n`;
-      prompt += `3. Provides insights about network performance implications\n`;
-      prompt += `4. Offers recommendations based on the comparison\n`;
-      prompt += `5. Uses markdown formatting for better readability, including tables for comparing metrics\n`;
-      prompt += `6. IMPORTANT: Do not ask questions or offer additional assistance at the end. Just provide the summary and conclude.\n`;
-      
-      // Make API request to Gemini with the selected model
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: prompt
-            }]
-          }]
-        })
+    rows.forEach(row => {
+      tableHtml += '<tr>';
+      row.forEach(cell => {
+        tableHtml += `<td>${cell}</td>`;
       });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`API request failed with status ${response.status}: ${errorData.error.message || 'Unknown error'}`);
-      }
-      
-      const data = await response.json();
-      
-      // Check if the response has the expected structure
-      if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
-        throw new Error('Invalid response structure from Gemini API');
-      }
-      
-      let summary = data.candidates[0].content.parts[0].text;
-      
-      // Remove any questions at the end of the summary
-      // Look for patterns like "Do you want me to..." or "Would you like me to..."
-      summary = summary.replace(/\n\nDo you want me to[\s\S]*$/gm, '');
-      summary = summary.replace(/\n\nWould you like me to[\s\S]*$/gm, '');
-      summary = summary.replace(/\n\nShould I[\s\S]*$/gm, '');
-      summary = summary.replace(/\n\nLet me know if[\s\S]*$/gm, '');
-      
-      // Display the AI comparison summary
-      const summaryHtml = `
-        <div class="explanation-section" id="ai-comparison-summary">
-          <div class="explanation-header">
-            <h3>AI Comparison Summary (${selectedModel})</h3>
-          </div>
-          <div class="explanation-content">${simpleMarkdownToHtml(summary)}</div>
-        </div>
-      `;
-      
-      // Remove the AI summary button
-      aiSummaryBtn.remove();
-      
-      // Add the summary
-      const comparisonSection = document.getElementById('comparison');
-      comparisonSection.insertAdjacentHTML('beforeend', summaryHtml);
-      
-    } catch (error) {
-      resultsSection.innerHTML += `<div class="error-message">Error generating AI comparison summary: ${error.message}</div>`;
-    } finally {
-      // Reset button state
-      if (aiSummaryBtn) {
-        aiSummaryBtn.textContent = originalText;
-        aiSummaryBtn.disabled = false;
-      }
+      tableHtml += '</tr>';
+    });
+    
+    tableHtml += '</tbody></table>';
+    return tableHtml;
+  });
+  
+  // Unordered lists
+  html = html.replace(/^(.*)$/gim, function(match, content) {
+    if (content.trim().startsWith('- ')) {
+      return '<li>' + content.trim().substring(2) + '</li>';
     }
-  }
+    return match;
+  });
+  
+  // Wrap consecutive list items in ul tags
+  html = html.replace(/(<li>.*<\/li>)(?=<li>)/g, '$1');
+  html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+  
+  // Ordered lists
+  html = html.replace(/^(\d+)\. (.*$)/gim, '<li>$2</li>');
+  
+  // Wrap consecutive ordered list items in ol tags
+  html = html.replace(/(<li>.*<\/li>)(?=<li>)/g, '$1');
+  html = html.replace(/(<li>.*<\/li>)/s, '<ol>$1</ol>');
+  
+  // Paragraphs
+  html = html.replace(/\n\n/g, '</p><p>');
+  html = '<p>' + html + '</p>';
+  
+  // Fix nested lists
+  html = html.replace(/<\/ul>\s*<ul>/g, '');
+  html = html.replace(/<\/ol>\s*<ol>/g, '');
+  
+  return html;
+}
 
 function updateCompareButton() {
   const count = selectedSnapshots.size;
@@ -601,6 +442,12 @@ function updateCompareButton() {
 }
 
 function runAnalysis() {
+  // Check if we already have 2 snapshots
+  if (snapshots.length >= 2) {
+    resultsSection.innerHTML = '<div class="error-message">You already have 2 analyses. Please clear existing analyses before running a new one.</div>';
+    return;
+  }
+  
   // Get input values
   const networkType = document.querySelector('input[name="networkType"]:checked').value;
   const codec = codecSelect.value;
@@ -637,6 +484,17 @@ function runAnalysis() {
   const comparisonInstructions = document.getElementById('comparisonInstructions');
   if (snapshots.length === 1 && comparisonInstructions) {
     comparisonInstructions.style.display = 'block';
+  }
+  
+  // Auto-select both snapshots if we now have 2
+  if (snapshots.length === 2) {
+    selectedSnapshots.clear();
+    snapshots.forEach(snapshot => {
+      selectedSnapshots.add(snapshot.id);
+      const checkbox = document.querySelector(`#snapshot-${snapshot.id} .snapshot-checkbox`);
+      if (checkbox) checkbox.checked = true;
+    });
+    updateCompareButton();
   }
   
   // Scroll to results
@@ -854,6 +712,198 @@ function clearSnapshots() {
   }
 }
 
+function checkIfSnapshotsAreIdentical(snapshot1, snapshot2) {
+  // Check if network types are different
+  if (snapshot1.networkType !== snapshot2.networkType) {
+    return false;
+  }
+  
+  // Check if blocking probabilities are different
+  if (snapshot1.blockingProb !== snapshot2.blockingProb) {
+    return false;
+  }
+  
+  // For VoIP, check if codecs are different
+  if (snapshot1.networkType === 'voip' && snapshot1.codec !== snapshot2.codec) {
+    return false;
+  }
+  
+  // Check if traffic data is the same
+  if (snapshot1.trafficData.length !== snapshot2.trafficData.length) {
+    return false;
+  }
+  
+  for (let i = 0; i < snapshot1.trafficData.length; i++) {
+    const link1 = snapshot1.trafficData[i];
+    const link2 = snapshot2.trafficData[i];
+    
+    if (link1.from !== link2.from || link1.to !== link2.to) {
+      return false;
+    }
+    
+    if (Math.abs(link1.dailyMinutes - link2.dailyMinutes) > 0.01) {
+      return false;
+    }
+    
+    if (Math.abs(link1.busyHourErlangs - link2.busyHourErlangs) > 0.01) {
+      return false;
+    }
+    
+    if (snapshot1.networkType === 'pstn') {
+      if (link1.requiredCircuits !== link2.requiredCircuits ||
+          link1.t1Count !== link2.t1Count ||
+          Math.abs(link1.bandwidthMbps - link2.bandwidthMbps) > 0.01) {
+        return false;
+      }
+    } else {
+      if (link1.codec !== link2.codec ||
+          link1.totalBandwidthPerCall !== link2.totalBandwidthPerCall ||
+          Math.abs(link1.totalBandwidthMbps - link2.totalBandwidthMbps) > 0.01) {
+        return false;
+      }
+    }
+  }
+  
+  return true;
+}
+
+function generateEfficiencyChart(snapshot1, snapshot2) {
+    // Check if snapshots are identical
+    if (checkIfSnapshotsAreIdentical(snapshot1, snapshot2)) {
+      return '<div class="chart-message">The selected analyses are identical. No efficiency comparison can be made.</div>';
+    }
+    
+    // Create a chart comparing bandwidth efficiency
+    const width = 800; // Increased width for better spacing
+    const height = 400;
+    const margin = { top: 40, right: 30, bottom: 80, left: 60 }; // Increased bottom margin for rotated labels
+    const chartWidth = width - margin.left - margin.right;
+    const chartHeight = height - margin.top - margin.bottom;
+    
+    // Get all unique links
+    const links = new Set();
+    snapshot1.trafficData.forEach(link => {
+      links.add(`${link.from}-${link.to}`);
+    });
+    snapshot2.trafficData.forEach(link => {
+      links.add(`${link.from}-${link.to}`);
+    });
+    
+    const linkArray = Array.from(links);
+    
+    // Find maximum bandwidth value for scaling
+    let maxBandwidth = 0;
+    snapshot1.trafficData.forEach(link => {
+      const bandwidth = link.bandwidthMbps || link.totalBandwidthMbps;
+      if (bandwidth > maxBandwidth) maxBandwidth = bandwidth;
+    });
+    snapshot2.trafficData.forEach(link => {
+      const bandwidth = link.bandwidthMbps || link.totalBandwidthMbps;
+      if (bandwidth > maxBandwidth) maxBandwidth = bandwidth;
+    });
+    
+    // Add some padding to the max
+    maxBandwidth *= 1.1;
+    
+    // Calculate bar width and spacing
+    const barWidth = 30; // Fixed bar width
+    const groupWidth = barWidth * 2 + 10; // Two bars plus spacing
+    const spacing = (chartWidth - (groupWidth * linkArray.length)) / (linkArray.length + 1);
+    
+    let svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`;
+    
+    // Add title with better styling
+    svg += `<text x="${width/2}" y="25" text-anchor="middle" font-size="20" font-weight="bold" fill="#333">Bandwidth Efficiency Comparison</text>`;
+    svg += `<text x="${width/2}" y="45" text-anchor="middle" font-size="12" fill="#666">Analysis 1 vs Analysis 2</text>`;
+    
+    // Add chart area
+    svg += `<g transform="translate(${margin.left},${margin.top})">`;
+    
+    // Add X axis
+    svg += `<line x1="0" y1="${chartHeight}" x2="${chartWidth}" y2="${chartHeight}" stroke="#333" stroke-width="1"/>`;
+    
+    // Add Y axis
+    svg += `<line x1="0" y1="0" x2="0" y2="${chartHeight}" stroke="#333" stroke-width="1"/>`;
+    
+    // Add Y axis labels
+    for (let i = 0; i <= 5; i++) {
+      const y = chartHeight - (i * chartHeight / 5);
+      const value = (i * maxBandwidth / 5).toFixed(2);
+      svg += `<line x1="-5" y1="${y}" x2="0" y2="${y}" stroke="#333" stroke-width="1"/>`;
+      svg += `<text x="-10" y="${y+5}" text-anchor="end" font-size="12">${value} Mbps</text>`;
+    }
+    
+    // Add Y axis title
+    svg += `<text x="-40" y="${chartHeight/2}" text-anchor="middle" font-size="14" transform="rotate(-90, -40, ${chartHeight/2})">Bandwidth (Mbps)</text>`;
+    
+    // Add bars and labels for each link
+    linkArray.forEach((link, index) => {
+      const x = spacing + index * (groupWidth + spacing);
+      
+      // Get bandwidth values for both snapshots
+      let bandwidth1 = 0;
+      let bandwidth2 = 0;
+      
+      const link1 = snapshot1.trafficData.find(l => `${l.from}-${l.to}` === link);
+      if (link1) {
+        bandwidth1 = link1.bandwidthMbps || link1.totalBandwidthMbps;
+      }
+      
+      const link2 = snapshot2.trafficData.find(l => `${l.from}-${l.to}` === link);
+      if (link2) {
+        bandwidth2 = link2.bandwidthMbps || link2.totalBandwidthMbps;
+      }
+      
+      // Calculate bar heights
+      const height1 = (bandwidth1 / maxBandwidth) * chartHeight;
+      const height2 = (bandwidth2 / maxBandwidth) * chartHeight;
+      
+      // Draw bars
+      svg += `<rect x="${x}" y="${chartHeight - height1}" width="${barWidth}" height="${height1}" fill="#1976d2"/>`;
+      svg += `<rect x="${x + barWidth + 10}" y="${chartHeight - height2}" width="${barWidth}" height="${height2}" fill="#4caf50"/>`;
+      
+      // Add link label with better styling
+      svg += `<text x="${x + groupWidth/2}" y="${chartHeight + 65}" text-anchor="middle" font-size="12" font-weight="500" fill="#333" transform="rotate(-45, ${x + groupWidth/2}, ${chartHeight + 65})">${link}</text>`;
+      
+      // Add bandwidth values on top of bars with better styling
+      if (height1 > 20) {
+        svg += `<rect x="${x - 3}" y="${chartHeight - height1 - 22}" width="${barWidth + 6}" height="20" fill="white" stroke="#1976d2" stroke-width="1" rx="2"/>`;
+        svg += `<text x="${x + barWidth/2}" y="${chartHeight - height1 - 7}" text-anchor="middle" font-size="11" font-weight="bold" fill="#1976d2">${bandwidth1.toFixed(2)}</text>`;
+      } else {
+        // Place the label above the bar if there's not enough space
+        svg += `<text x="${x + barWidth/2}" y="${chartHeight - height1 - 5}" text-anchor="middle" font-size="11" font-weight="bold" fill="#1976d2">${bandwidth1.toFixed(2)}</text>`;
+      }
+      
+      if (height2 > 20) {
+        svg += `<rect x="${x + barWidth + 7}" y="${chartHeight - height2 - 22}" width="${barWidth + 6}" height="20" fill="white" stroke="#4caf50" stroke-width="1" rx="2"/>`;
+        svg += `<text x="${x + barWidth + 10 + barWidth/2}" y="${chartHeight - height2 - 7}" text-anchor="middle" font-size="11" font-weight="bold" fill="#4caf50">${bandwidth2.toFixed(2)}</text>`;
+      } else {
+        // Place the label above the bar if there's not enough space
+        svg += `<text x="${x + barWidth + 10 + barWidth/2}" y="${chartHeight - height2 - 5}" text-anchor="middle" font-size="11" font-weight="bold" fill="#4caf50">${bandwidth2.toFixed(2)}</text>`;
+      }
+    });
+    
+    // Add legend with better styling and clearer labels
+    const legendX = chartWidth - 150;
+    const legendY = 10;
+    
+    // Legend background
+    svg += `<rect x="${legendX - 10}" y="${legendY - 5}" width="140" height="50" fill="white" stroke="#ccc" stroke-width="1" rx="4"/>`;
+    
+    // Analysis 1 legend
+    svg += `<rect x="${legendX}" y="${legendY}" width="15" height="15" fill="#1976d2"/>`;
+    svg += `<text x="${legendX + 20}" y="${legendY + 12}" font-size="12" font-weight="bold">Analysis 1</text>`;
+    
+    // Analysis 2 legend
+    svg += `<rect x="${legendX}" y="${legendY + 20}" width="15" height="15" fill="#4caf50"/>`;
+    svg += `<text x="${legendX + 20}" y="${legendY + 32}" font-size="12" font-weight="bold">Analysis 2</text>`;
+    
+    svg += '</g>';
+    svg += '</svg>';
+    
+    return `<div class="chart-container">${svg}</div>`;
+  }
+
 async function compareSelected() {
   if (selectedSnapshots.size !== 2) {
     resultsSection.innerHTML = '<div class="error-message">Please select exactly two snapshots to compare.</div>';
@@ -872,127 +922,138 @@ async function compareSelected() {
   // Create comparison section
   let comparisonHtml = '<section id="comparison"><h2>Comparison of Selected Analyses</h2>';
   
-  // Add comparison tables
-  if (snapshot1.networkType === snapshot2.networkType) {
-    // Same network type comparison
-    if (snapshot1.networkType === 'pstn') {
-      comparisonHtml += '<h3>PSTN Comparison</h3>';
-      
-      const headers = ['From', 'To', 'Snapshot', 'Daily Minutes', 'Busy Hour Erlangs', 'Required Circuits', 'T-1 Count', 'Bandwidth (Mbps)'];
-      const rows = [];
-      
-      // Add rows for first snapshot
-      snapshot1.trafficData.forEach(link => {
-        rows.push([
-          link.from,
-          link.to,
-          `1 (${snapshot1.timestamp})`,
-          link.dailyMinutes.toLocaleString(),
-          link.busyHourErlangs.toFixed(2),
-          link.requiredCircuits.toString(),
-          link.t1Count.toString(),
-          link.bandwidthMbps.toFixed(2)
-        ]);
-      });
-      
-      // Add rows for second snapshot
-      snapshot2.trafficData.forEach(link => {
-        rows.push([
-          link.from,
-          link.to,
-          `2 (${snapshot2.timestamp})`,
-          link.dailyMinutes.toLocaleString(),
-          link.busyHourErlangs.toFixed(2),
-          link.requiredCircuits.toString(),
-          link.t1Count.toString(),
-          link.bandwidthMbps.toFixed(2)
-        ]);
-      });
-      
-      comparisonHtml += renderTable('pstn-comparison', headers, rows);
-    } else {
-      comparisonHtml += '<h3>VoIP Comparison</h3>';
-      
-      const headers = ['From', 'To', 'Snapshot', 'Daily Minutes', 'Busy Hour Erlangs', 'Codec', 'Bandwidth per Call (kbps)', 'Total Bandwidth (Mbps)'];
-      const rows = [];
-      
-      // Add rows for first snapshot
-      snapshot1.trafficData.forEach(link => {
-        rows.push([
-          link.from,
-          link.to,
-          `1 (${snapshot1.timestamp})`,
-          link.dailyMinutes.toLocaleString(),
-          link.busyHourErlangs.toFixed(2),
-          link.codec.toUpperCase(),
-          link.totalBandwidthPerCall.toFixed(0),
-          link.totalBandwidthMbps.toFixed(2)
-        ]);
-      });
-      
-      // Add rows for second snapshot
-      snapshot2.trafficData.forEach(link => {
-        rows.push([
-          link.from,
-          link.to,
-          `2 (${snapshot2.timestamp})`,
-          link.dailyMinutes.toLocaleString(),
-          link.busyHourErlangs.toFixed(2),
-          link.codec.toUpperCase(),
-          link.totalBandwidthPerCall.toFixed(0),
-          link.totalBandwidthMbps.toFixed(2)
-        ]);
-      });
-      
-      comparisonHtml += renderTable('voip-comparison', headers, rows);
-    }
-  } else {
-    // Different network types - show both tables
-    comparisonHtml += '<h3>PSTN Analysis</h3>';
+  // Check if snapshots are identical
+  if (checkIfSnapshotsAreIdentical(snapshot1, snapshot2)) {
+    comparisonHtml += '<div class="error-message">The selected analyses are identical. Please run different analyses to compare.</div>';
+    comparisonHtml += '</section>';
+    resultsSection.innerHTML += comparisonHtml;
     
-    const pstnSnapshot = snapshot1.networkType === 'pstn' ? snapshot1 : snapshot2;
-    const pstnHeaders = ['From', 'To', 'Daily Minutes', 'Busy Hour Erlangs', 'Required Circuits', 'T-1 Count', 'Bandwidth (Mbps)'];
-    const pstnRows = pstnSnapshot.trafficData.map(link => [
-      link.from,
-      link.to,
-      link.dailyMinutes.toLocaleString(),
-      link.busyHourErlangs.toFixed(2),
-      link.requiredCircuits,
-      link.t1Count,
-      link.bandwidthMbps.toFixed(2)
-    ]);
-    
-    comparisonHtml += renderTable('pstn-comparison', pstnHeaders, pstnRows);
-    
-    comparisonHtml += '<h3>VoIP Analysis</h3>';
-    
-    const voipSnapshot = snapshot1.networkType === 'voip' ? snapshot1 : snapshot2;
-    const voipHeaders = ['From', 'To', 'Daily Minutes', 'Busy Hour Erlangs', 'Codec', 'Bandwidth per Call (kbps)', 'Total Bandwidth (Mbps)'];
-    const voipRows = voipSnapshot.trafficData.map(link => [
-      link.from,
-      link.to,
-      link.dailyMinutes.toLocaleString(),
-      link.busyHourErlangs.toFixed(2),
-      link.codec.toUpperCase(),
-      link.totalBandwidthPerCall.toFixed(0),
-      link.totalBandwidthMbps.toFixed(2)
-    ]);
-    
-    comparisonHtml += renderTable('voip-comparison', voipHeaders, voipRows);
+    // Scroll to comparison
+    document.getElementById('comparison').scrollIntoView({ behavior: 'smooth' });
+    return;
   }
+  
+  // Create unified comparison table
+  comparisonHtml += '<h3>Metrics Comparison</h3>';
+  
+  const headers = ['From', 'To', 'Metric', 'Analysis 1', 'Analysis 2', 'Difference'];
+  const rows = [];
+  
+  // Add common metrics for both snapshots
+  const commonLinks = new Set();
+  snapshot1.trafficData.forEach(link => {
+    commonLinks.add(`${link.from}-${link.to}`);
+  });
+  snapshot2.trafficData.forEach(link => {
+    commonLinks.add(`${link.from}-${link.to}`);
+  });
+  
+  commonLinks.forEach(linkStr => {
+    const [from, to] = linkStr.split('-');
+    
+    const link1 = snapshot1.trafficData.find(l => l.from === from && l.to === to);
+    const link2 = snapshot2.trafficData.find(l => l.from === from && l.to === to);
+    
+    if (link1 && link2) {
+      // Daily Minutes
+      rows.push([
+        from,
+        to,
+        'Daily Minutes',
+        link1.dailyMinutes.toLocaleString(),
+        link2.dailyMinutes.toLocaleString(),
+        (link1.dailyMinutes - link2.dailyMinutes).toLocaleString()
+      ]);
+      
+      // Busy Hour Erlangs
+      rows.push([
+        from,
+        to,
+        'Busy Hour Erlangs',
+        link1.busyHourErlangs.toFixed(2),
+        link2.busyHourErlangs.toFixed(2),
+        (link1.busyHourErlangs - link2.busyHourErlangs).toFixed(2)
+      ]);
+      
+      // Bandwidth
+      const bandwidth1 = link1.bandwidthMbps || link1.totalBandwidthMbps;
+      const bandwidth2 = link2.bandwidthMbps || link2.totalBandwidthMbps;
+      rows.push([
+        from,
+        to,
+        'Bandwidth (Mbps)',
+        bandwidth1.toFixed(2),
+        bandwidth2.toFixed(2),
+        (bandwidth1 - bandwidth2).toFixed(2)
+      ]);
+      
+      // Network-specific metrics
+      if (snapshot1.networkType === 'pstn' && snapshot2.networkType === 'pstn') {
+        // Required Circuits
+        rows.push([
+          from,
+          to,
+          'Required Circuits',
+          link1.requiredCircuits.toString(),
+          link2.requiredCircuits.toString(),
+          (link1.requiredCircuits - link2.requiredCircuits).toString()
+        ]);
+        
+        // T-1 Count
+        rows.push([
+          from,
+          to,
+          'T-1 Count',
+          link1.t1Count.toString(),
+          link2.t1Count.toString(),
+          (link1.t1Count - link2.t1Count).toString()
+        ]);
+      } else if (snapshot1.networkType === 'voip' && snapshot2.networkType === 'voip') {
+        // Bandwidth per Call
+        rows.push([
+          from,
+          to,
+          'Bandwidth per Call (kbps)',
+          link1.totalBandwidthPerCall.toFixed(0),
+          link2.totalBandwidthPerCall.toFixed(0),
+          (link1.totalBandwidthPerCall - link2.totalBandwidthPerCall).toFixed(0)
+        ]);
+      }
+    }
+  });
+  
+  comparisonHtml += renderTable('comparison-table', headers, rows);
+  
+  // Add configuration comparison
+  comparisonHtml += '<h3>Configuration Comparison</h3>';
+  const configHeaders = ['Property', 'Analysis 1', 'Analysis 2'];
+  const configRows = [
+    ['Network Type', snapshot1.networkType.toUpperCase(), snapshot2.networkType.toUpperCase()],
+    ['Blocking Probability', snapshot1.blockingProb.toString(), snapshot2.blockingProb.toString()]
+  ];
+  
+  if (snapshot1.networkType === 'voip' && snapshot2.networkType === 'voip') {
+    configRows.push(['Codec', snapshot1.codec.toUpperCase(), snapshot2.codec.toUpperCase()]);
+  }
+  
+  comparisonHtml += renderTable('config-table', configHeaders, configRows);
+  
+  // Add efficiency chart
+  comparisonHtml += '<h3>Efficiency Comparison</h3>';
+  comparisonHtml += generateEfficiencyChart(snapshot1, snapshot2);
   
   // Add explanations comparison if available
   const explanations = [];
   if (snapshot1.explanation) {
     explanations.push({
-      title: `${snapshot1.networkType.toUpperCase()} Analysis (${snapshot1.timestamp}) - ${snapshot1.modelUsed}`,
+      title: `Analysis 1 (${snapshot1.timestamp}) - ${snapshot1.modelUsed}`,
       content: snapshot1.explanation
     });
   }
   
   if (snapshot2.explanation) {
     explanations.push({
-      title: `${snapshot2.networkType.toUpperCase()} Analysis (${snapshot2.timestamp}) - ${snapshot2.modelUsed}`,
+      title: `Analysis 2 (${snapshot2.timestamp}) - ${snapshot2.modelUsed}`,
       content: snapshot2.explanation
     });
   }
@@ -1115,7 +1176,8 @@ async function getAiComparisonSummary(snapshot1, snapshot2) {
     prompt += `2. Explains what these differences mean in practical terms\n`;
     prompt += `3. Provides insights about network performance implications\n`;
     prompt += `4. Offers recommendations based on the comparison\n`;
-    prompt += `5. Uses markdown formatting for better readability\n`;
+    prompt += `5. Uses markdown formatting for better readability, including tables for comparing metrics\n`;
+    prompt += `6. IMPORTANT: Do not ask questions or offer additional assistance at the end. Just provide the summary and conclude.\n`;
     
     // Make API request to Gemini with the selected model
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`, {
@@ -1144,7 +1206,14 @@ async function getAiComparisonSummary(snapshot1, snapshot2) {
       throw new Error('Invalid response structure from Gemini API');
     }
     
-    const summary = data.candidates[0].content.parts[0].text;
+    let summary = data.candidates[0].content.parts[0].text;
+    
+    // Remove any questions at the end of the summary
+    // Look for patterns like "Do you want me to..." or "Would you like me to..."
+    summary = summary.replace(/\n\nDo you want me to[\s\S]*$/gm, '');
+    summary = summary.replace(/\n\nWould you like me to[\s\S]*$/gm, '');
+    summary = summary.replace(/\n\nShould I[\s\S]*$/gm, '');
+    summary = summary.replace(/\n\nLet me know if[\s\S]*$/gm, '');
     
     // Display the AI comparison summary
     const summaryHtml = `

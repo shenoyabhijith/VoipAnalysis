@@ -187,7 +187,7 @@
   
   table { 
     border-collapse: collapse; 
-    margin: 1.5rem 0; 
+    margin: 1.5rem auto; /* Center the table */
     width: 100%; 
     max-width: 900px; 
   }
@@ -195,7 +195,7 @@
   th, td { 
     border: 1px solid var(--grey); 
     padding: 0.6rem; 
-    text-align: left;
+    text-align: center;
   }
   
   th {
@@ -203,10 +203,45 @@
     font-weight: 600;
   }
   
+  td.numeric {
+    text-align: center;
+    font-family: 'Courier New', monospace;
+    font-weight: 500;
+  }
+  
+  /* Chart styling */
+  .chart-container {
+    margin: 2rem 0;
+    text-align: center;
+    background: #f9f9f9;
+    border-radius: 8px;
+    padding: 1rem;
+    border: 1px solid var(--grey);
+  }
+  
+  .chart-container svg {
+    max-width: 100%;
+    height: auto;
+    background: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  .chart-message {
+    text-align: center;
+    padding: 2rem;
+    color: #666;
+    font-style: italic;
+    background: #f5f5f5;
+    border-radius: 8px;
+    margin: 1rem 0;
+  }
+  
   svg { 
     max-width: 100%; 
     height: auto; 
-    margin: 1rem 0; 
+    margin: 1rem auto; /* Center the SVG */
+    display: block; /* Ensure it's a block element for centering */
   }
   
   #results > section { 
@@ -235,11 +270,28 @@
   
   .action-buttons {
     margin-top: 2rem;
+    text-align: center; /* Center the action buttons */
   }
   
   .diagram-container {
     text-align: center;
     margin: 1.5rem 0;
+  }
+  
+  .chart-container {
+    text-align: center;
+    margin: 1.5rem 0;
+    overflow-x: auto;
+  }
+  
+  .chart-message {
+    background: #fff3e0;
+    border: 1px solid #ffcc02;
+    border-radius: 4px;
+    padding: 1rem;
+    margin: 1.5rem auto; /* Center the message */
+    max-width: 600px;
+    color: #e65100;
   }
   
   summary {
@@ -257,14 +309,16 @@
     color: #c62828;
     padding: 1rem;
     border-radius: 4px;
-    margin: 1rem 0;
+    margin: 1rem auto; /* Center the error message */
+    max-width: 600px;
     border: 1px solid #ffcdd2;
   }
   
   .explanation-section {
     background: #f5f5f5;
     border-radius: 8px;
-    margin: 1.5rem 0;
+    margin: 1.5rem auto; /* Center the explanation section */
+    max-width: 900px; /* Limit the width for better readability */
     overflow: hidden;
   }
   
