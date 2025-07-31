@@ -444,7 +444,7 @@ function updateCompareButton() {
 function runAnalysis() {
   // Check if we already have 2 snapshots
   if (snapshots.length >= 2) {
-    resultsSection.innerHTML = '<div class="error-message">You already have 2 analyses. Please clear existing analyses before running a new one.</div>';
+    resultsSection.innerHTML = '<div class="error-message">You already have 2 analyses. Please clear existing analyses by clicking the "Clear Snapshots" button before running a new one.</div>';
     return;
   }
   
