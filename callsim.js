@@ -162,14 +162,11 @@
     
     window.simulationTimers[`${snapshotId}-autostop`] = autoStopTimer;
     
-    // Start countdown timer
+    // Start countdown timer (silent - no log entries)
     let timeRemaining = 10;
     const countdownTimer = setInterval(() => {
       timeRemaining--;
-      const elapsed = 10 - timeRemaining;
-      if (timeRemaining > 0) {
-        addLogEntry(logElement, `⏱️ Progress: ${elapsed}s elapsed, ${timeRemaining}s remaining`, '#f39c12');
-      }
+      // No log entries for countdown - keep logs focused on call events
     }, 1000);
     
     window.simulationTimers[`${snapshotId}-countdown`] = countdownTimer;
