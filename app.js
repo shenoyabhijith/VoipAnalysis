@@ -894,16 +894,32 @@ async function explainResults(snapshotId) {
     prompt += `- Codec: ${summary.codec.toUpperCase()}\n`;
     prompt += `- Blocking Probability: ${(summary.blockingProb * 100).toFixed(1)}%\n\n`;
     
-    prompt += `KEY METRICS:\n`;
+    // Check if we have simulation data
+    if (summary.totalCalls !== undefined) {
+      prompt += `SIMULATION RESULTS (20-second test):\n`;
+      prompt += `- Total Calls Attempted: ${summary.totalCalls}\n`;
+      prompt += `- Blocked Calls: ${summary.blockedCalls}\n`;
+      prompt += `- Actual Blocking Rate: ${summary.actualBlockingRate.toFixed(1)}%\n`;
+      prompt += `- Peak Active Calls: ${summary.peakActiveCalls}\n`;
+      prompt += `- Peak Bandwidth Usage: ${summary.peakBandwidthUsage.toFixed(2)} Mbps\n`;
+      prompt += `- Average Call Rate: ${summary.averageCallRate.toFixed(1)} calls/min\n`;
+      prompt += `- Efficiency Score: ${summary.efficiencyScore.toFixed(2)} calls/Mbps\n\n`;
+    }
+    
+    prompt += `THEORETICAL ANALYSIS:\n`;
     prompt += `- Total Daily Traffic: ${summary.totalDailyMinutes.toLocaleString()} minutes\n`;
     prompt += `- Total Busy Hour Erlangs: ${summary.totalErlangs.toFixed(1)}\n`;
     prompt += `- Total Bandwidth Required: ${summary.totalBandwidth.toFixed(2)} Mbps\n`;
-    prompt += `- Efficiency Score: ${summary.efficiencyScore.toFixed(2)} calls/Mbps\n`;
     prompt += `- Number of Links: ${summary.linkCount}\n\n`;
     
     prompt += `PERFORMANCE HIGHLIGHTS:\n`;
-    prompt += `- Busiest Link: ${summary.busiestLink.route} (${summary.busiestLink.erlangs.toFixed(2)} Erlangs)\n`;
-    prompt += `- Highest Bandwidth: ${summary.highestBandwidthLink.route} (${summary.highestBandwidthLink.bandwidth.toFixed(2)} Mbps)\n\n`;
+    if (summary.busiestLink) {
+      prompt += `- Busiest Link: ${summary.busiestLink.route} (${summary.busiestLink.erlangs.toFixed(2)} Erlangs)\n`;
+    }
+    if (summary.highestBandwidthLink) {
+      prompt += `- Highest Bandwidth: ${summary.highestBandwidthLink.route} (${summary.highestBandwidthLink.bandwidth.toFixed(2)} Mbps)\n`;
+    }
+    prompt += `\n`;
     
     prompt += `LINK SUMMARIES:\n`;
     summary.linkSummaries.forEach(link => {
@@ -917,11 +933,25 @@ async function explainResults(snapshotId) {
     });
     
     prompt += `\nProvide a comprehensive analysis with this structure:\n\n`;
-    prompt += `## Executive Summary\n`;
-    prompt += `- Key findings and overall performance assessment\n\n`;
-    prompt += `## Technical Analysis\n`;
-    prompt += `- Bandwidth utilization and efficiency insights\n`;
-    prompt += `- Infrastructure requirements and scalability\n\n`;
+    if (summary.totalCalls !== undefined) {
+      prompt += `## Executive Summary\n`;
+      prompt += `- Key findings from simulation results and overall performance assessment\n`;
+      prompt += `- Comparison of theoretical vs actual performance\n\n`;
+      prompt += `## Simulation Analysis\n`;
+      prompt += `- Detailed analysis of 20-second simulation results\n`;
+      prompt += `- Blocking behavior and call handling efficiency\n`;
+      prompt += `- Peak performance and resource utilization\n\n`;
+      prompt += `## Technical Analysis\n`;
+      prompt += `- Bandwidth utilization and efficiency insights\n`;
+      prompt += `- Infrastructure requirements and scalability\n`;
+      prompt += `- Protocol performance characteristics\n\n`;
+    } else {
+      prompt += `## Executive Summary\n`;
+      prompt += `- Key findings and overall performance assessment\n\n`;
+      prompt += `## Technical Analysis\n`;
+      prompt += `- Bandwidth utilization and efficiency insights\n`;
+      prompt += `- Infrastructure requirements and scalability\n\n`;
+    }
     prompt += `## Operational Insights\n`;
     prompt += `- Traffic patterns and bottleneck identification\n`;
     prompt += `- Performance optimization opportunities\n\n`;
@@ -1654,65 +1684,110 @@ async function getAiComparisonSummary(snapshot1, snapshot2) {
 function generateSnapshotSummary(snapshot) {
   const { networkType, codec, blockingProb, trafficData } = snapshot;
   
-  // Calculate key metrics
-  const totalDailyMinutes = trafficData.reduce((sum, link) => sum + link.dailyMinutes, 0);
-  const totalErlangs = trafficData.reduce((sum, link) => sum + link.busyHourErlangs, 0);
-  const totalBandwidth = trafficData.reduce((sum, link) => {
-    return sum + (networkType === 'pstn' ? link.bandwidthMbps : link.totalBandwidthMbps);
-  }, 0);
+  // Get simulation data if available
+  const simulationData = getSimulationData(snapshot.id);
+  const hasSimulationData = simulationData.totalCalls > 0;
   
-  // Find busiest and most efficient links
-  const busiestLink = trafficData.reduce((max, link) => 
-    link.busyHourErlangs > max.busyHourErlangs ? link : max
-  );
-  
-  const highestBandwidthLink = trafficData.reduce((max, link) => {
-    const bandwidth = networkType === 'pstn' ? link.bandwidthMbps : link.totalBandwidthMbps;
-    const maxBandwidth = networkType === 'pstn' ? max.bandwidthMbps : max.totalBandwidthMbps;
-    return bandwidth > maxBandwidth ? link : max;
-  });
-  
-  // Calculate efficiency metrics
-  const efficiencyScore = totalBandwidth > 0 ? totalErlangs / totalBandwidth : 0;
-  
-  // Generate link summaries
-  const linkSummaries = trafficData.map(link => {
-    const bandwidth = networkType === 'pstn' ? link.bandwidthMbps : link.totalBandwidthMbps;
+  if (hasSimulationData) {
+    // Use simulation data for AI analysis
     return {
-      route: `${link.from} → ${link.to}`,
-      dailyMinutes: link.dailyMinutes,
-      erlangs: link.busyHourErlangs,
-      bandwidth: bandwidth,
-      ...(networkType === 'pstn' ? {
-        circuits: link.requiredCircuits,
-        t1Count: link.t1Count
-      } : {
-        codec: link.codec,
-        bandwidthPerCall: link.totalBandwidthPerCall
+      networkType,
+      codec: codec || 'N/A',
+      blockingProb,
+      // Simulation-based metrics
+      totalCalls: simulationData.totalCalls,
+      blockedCalls: simulationData.blockedCalls,
+      actualBlockingRate: simulationData.actualBlockingRate,
+      peakActiveCalls: simulationData.peakActiveCalls,
+      peakBandwidthUsage: simulationData.bandwidthUsage,
+      efficiencyScore: simulationData.efficiencyScore,
+      averageCallRate: simulationData.averageCallRate,
+      // Theoretical metrics for context
+      totalDailyMinutes: trafficData.reduce((sum, link) => sum + link.dailyMinutes, 0),
+      totalErlangs: trafficData.reduce((sum, link) => sum + link.busyHourErlangs, 0),
+      totalBandwidth: trafficData.reduce((sum, link) => {
+        return sum + (networkType === 'pstn' ? link.bandwidthMbps : link.totalBandwidthMbps);
+      }, 0),
+      linkCount: trafficData.length,
+      // Link summaries for context
+      linkSummaries: trafficData.map(link => {
+        const bandwidth = networkType === 'pstn' ? link.bandwidthMbps : link.totalBandwidthMbps;
+        return {
+          route: `${link.from} → ${link.to}`,
+          dailyMinutes: link.dailyMinutes,
+          erlangs: link.busyHourErlangs,
+          bandwidth: bandwidth,
+          ...(networkType === 'pstn' ? {
+            circuits: link.requiredCircuits,
+            t1Count: link.t1Count
+          } : {
+            codec: link.codec,
+            bandwidthPerCall: link.totalBandwidthPerCall
+          })
+        };
       })
     };
-  });
-  
-  return {
-    networkType,
-    codec: codec || 'N/A',
-    blockingProb,
-    totalDailyMinutes,
-    totalErlangs,
-    totalBandwidth,
-    efficiencyScore,
-    busiestLink: {
-      route: `${busiestLink.from} → ${busiestLink.to}`,
-      erlangs: busiestLink.busyHourErlangs,
-      dailyMinutes: busiestLink.dailyMinutes
-    },
-    highestBandwidthLink: {
-      route: `${highestBandwidthLink.from} → ${highestBandwidthLink.to}`,
-      bandwidth: networkType === 'pstn' ? highestBandwidthLink.bandwidthMbps : highestBandwidthLink.totalBandwidthMbps
-    },
-    linkCount: trafficData.length,
-    linkSummaries
-  };
+  } else {
+    // Fallback to theoretical data if no simulation data
+    const totalDailyMinutes = trafficData.reduce((sum, link) => sum + link.dailyMinutes, 0);
+    const totalErlangs = trafficData.reduce((sum, link) => sum + link.busyHourErlangs, 0);
+    const totalBandwidth = trafficData.reduce((sum, link) => {
+      return sum + (networkType === 'pstn' ? link.bandwidthMbps : link.totalBandwidthMbps);
+    }, 0);
+    
+    // Find busiest and most efficient links
+    const busiestLink = trafficData.reduce((max, link) => 
+      link.busyHourErlangs > max.busyHourErlangs ? link : max
+    );
+    
+    const highestBandwidthLink = trafficData.reduce((max, link) => {
+      const bandwidth = networkType === 'pstn' ? link.bandwidthMbps : link.totalBandwidthMbps;
+      const maxBandwidth = networkType === 'pstn' ? max.bandwidthMbps : max.totalBandwidthMbps;
+      return bandwidth > maxBandwidth ? link : max;
+    });
+    
+    // Calculate efficiency metrics
+    const efficiencyScore = totalBandwidth > 0 ? totalErlangs / totalBandwidth : 0;
+    
+    // Generate link summaries
+    const linkSummaries = trafficData.map(link => {
+      const bandwidth = networkType === 'pstn' ? link.bandwidthMbps : link.totalBandwidthMbps;
+      return {
+        route: `${link.from} → ${link.to}`,
+        dailyMinutes: link.dailyMinutes,
+        erlangs: link.busyHourErlangs,
+        bandwidth: bandwidth,
+        ...(networkType === 'pstn' ? {
+          circuits: link.requiredCircuits,
+          t1Count: link.t1Count
+        } : {
+          codec: link.codec,
+          bandwidthPerCall: link.totalBandwidthPerCall
+        })
+      };
+    });
+    
+    return {
+      networkType,
+      codec: codec || 'N/A',
+      blockingProb,
+      totalDailyMinutes,
+      totalErlangs,
+      totalBandwidth,
+      efficiencyScore,
+      busiestLink: {
+        route: `${busiestLink.from} → ${busiestLink.to}`,
+        erlangs: busiestLink.busyHourErlangs,
+        dailyMinutes: busiestLink.dailyMinutes
+      },
+      highestBandwidthLink: {
+        route: `${highestBandwidthLink.from} → ${highestBandwidthLink.to}`,
+        bandwidth: networkType === 'pstn' ? highestBandwidthLink.bandwidthMbps : highestBandwidthLink.totalBandwidthMbps
+      },
+      linkCount: trafficData.length,
+      linkSummaries
+    };
+  }
 }
 
 function generateComparisonSummary(snapshot1, snapshot2) {
