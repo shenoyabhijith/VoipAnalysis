@@ -814,50 +814,51 @@ async function explainResults(snapshotId) {
   explainBtn.disabled = true;
   
   try {
-    // Format the data for the LLM
-    let prompt = `Explain the following network traffic analysis results in simple terms:\n\n`;
-    prompt += `Network Type: ${snapshot.networkType.toUpperCase()}\n`;
-    prompt += `Blocking Probability: ${snapshot.blockingProb}\n\n`;
+    // Generate precomputed summary for efficient AI processing
+    const summary = generateSnapshotSummary(snapshot);
     
-    if (snapshot.networkType === 'pstn') {
-      prompt += `PSTN Analysis Results:\n`;
-      prompt += `| From | To | Daily Minutes | Busy Hour Erlangs | Required Circuits | T-1 Count | Bandwidth (Mbps) |\n`;
-      
-      snapshot.trafficData.forEach(link => {
-        prompt += `| ${link.from} | ${link.to} | ${link.dailyMinutes.toLocaleString()} | ${link.busyHourErlangs.toFixed(2)} | ${link.requiredCircuits} | ${link.t1Count} | ${link.bandwidthMbps.toFixed(2)} |\n`;
-      });
-    } else {
-      prompt += `VoIP Analysis Results:\n`;
-      prompt += `Codec: ${snapshot.codec.toUpperCase()}\n`;
-      prompt += `| From | To | Daily Minutes | Busy Hour Erlangs | Bandwidth per Call (kbps) | Total Bandwidth (Mbps) |\n`;
-      
-      snapshot.trafficData.forEach(link => {
-        prompt += `| ${link.from} | ${link.to} | ${link.dailyMinutes.toLocaleString()} | ${link.busyHourErlangs.toFixed(2)} | ${link.totalBandwidthPerCall.toFixed(0)} | ${link.totalBandwidthMbps.toFixed(2)} |\n`;
-      });
-    }
+    // Format the data for the LLM with precomputed metrics
+    let prompt = `Analyze this network traffic analysis summary:\n\n`;
+    prompt += `NETWORK CONFIGURATION:\n`;
+    prompt += `- Type: ${summary.networkType.toUpperCase()}\n`;
+    prompt += `- Codec: ${summary.codec.toUpperCase()}\n`;
+    prompt += `- Blocking Probability: ${(summary.blockingProb * 100).toFixed(1)}%\n\n`;
     
-    prompt += `\nPlease provide a comprehensive explanation with the following structure:\n\n`;
-    prompt += `## Overview\n`;
-    prompt += `- Brief description of the analysis type and methodology\n`;
-    prompt += `- Key parameters and their significance\n\n`;
-    prompt += `## Results Analysis\n`;
-    prompt += `- Detailed interpretation of the traffic data\n`;
-    prompt += `- What the numbers mean in practical terms\n`;
-    prompt += `- Performance implications for each link\n\n`;
-    prompt += `## Technical Insights\n`;
-    prompt += `- Bandwidth utilization patterns\n`;
-    prompt += `- Infrastructure requirements\n`;
-    prompt += `- Scalability considerations\n\n`;
+    prompt += `KEY METRICS:\n`;
+    prompt += `- Total Daily Traffic: ${summary.totalDailyMinutes.toLocaleString()} minutes\n`;
+    prompt += `- Total Busy Hour Erlangs: ${summary.totalErlangs.toFixed(1)}\n`;
+    prompt += `- Total Bandwidth Required: ${summary.totalBandwidth.toFixed(2)} Mbps\n`;
+    prompt += `- Efficiency Score: ${summary.efficiencyScore.toFixed(2)} calls/Mbps\n`;
+    prompt += `- Number of Links: ${summary.linkCount}\n\n`;
+    
+    prompt += `PERFORMANCE HIGHLIGHTS:\n`;
+    prompt += `- Busiest Link: ${summary.busiestLink.route} (${summary.busiestLink.erlangs.toFixed(2)} Erlangs)\n`;
+    prompt += `- Highest Bandwidth: ${summary.highestBandwidthLink.route} (${summary.highestBandwidthLink.bandwidth.toFixed(2)} Mbps)\n\n`;
+    
+    prompt += `LINK SUMMARIES:\n`;
+    summary.linkSummaries.forEach(link => {
+      prompt += `- ${link.route}: ${link.dailyMinutes.toLocaleString()} min/day, ${link.erlangs.toFixed(2)} Erlangs, ${link.bandwidth.toFixed(2)} Mbps`;
+      if (summary.networkType === 'pstn') {
+        prompt += ` (${link.circuits} circuits, ${link.t1Count} T1s)`;
+      } else {
+        prompt += ` (${link.bandwidthPerCall} kbps/call)`;
+      }
+      prompt += `\n`;
+    });
+    
+    prompt += `\nProvide a comprehensive analysis with this structure:\n\n`;
+    prompt += `## Executive Summary\n`;
+    prompt += `- Key findings and overall performance assessment\n\n`;
+    prompt += `## Technical Analysis\n`;
+    prompt += `- Bandwidth utilization and efficiency insights\n`;
+    prompt += `- Infrastructure requirements and scalability\n\n`;
+    prompt += `## Operational Insights\n`;
+    prompt += `- Traffic patterns and bottleneck identification\n`;
+    prompt += `- Performance optimization opportunities\n\n`;
     prompt += `## Recommendations\n`;
-    prompt += `- Implementation considerations\n`;
-    prompt += `- Potential optimizations\n`;
-    prompt += `- Risk factors to monitor\n\n`;
-    prompt += `IMPORTANT:\n`;
-    prompt += `- Use clear, professional language\n`;
-    prompt += `- Include specific insights about the data\n`;
-    prompt += `- Use markdown formatting for better readability\n`;
-    prompt += `- Focus on practical implications for network engineers\n`;
-    prompt += `- Do not ask questions or offer additional assistance at the end\n`;
+    prompt += `- Implementation strategy and risk mitigation\n`;
+    prompt += `- Monitoring and maintenance considerations\n\n`;
+    prompt += `Use professional language, focus on practical implications, and provide specific insights based on the data.`;
     
     // Make API request to Gemini with the selected model
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`, {
@@ -1379,67 +1380,44 @@ async function getAiComparisonSummary(snapshot1, snapshot2) {
   aiSummaryBtn.disabled = true;
   
   try {
-    // Generate descriptive labels
+    // Generate precomputed comparison summary for efficient AI processing
+    const comparison = generateComparisonSummary(snapshot1, snapshot2);
     const label1 = generateDescriptiveLabel(snapshot1);
     const label2 = generateDescriptiveLabel(snapshot2);
     
-    // Format the data for the LLM
-    let prompt = `Please provide a comparison summary of the following two network traffic analyses:\n\n`;
+    // Format the data for the LLM with precomputed metrics
+    let prompt = `Compare these network traffic analyses:\n\n`;
     
-    // First snapshot
-    prompt += `${label1.toUpperCase()}:\n`;
-    prompt += `Network Type: ${snapshot1.networkType.toUpperCase()}\n`;
-    prompt += `Timestamp: ${snapshot1.timestamp}\n`;
-    prompt += `Blocking Probability: ${snapshot1.blockingProb}\n`;
+    prompt += `ANALYSIS 1 (${label1}):\n`;
+    prompt += `- Type: ${comparison.first.networkType.toUpperCase()}\n`;
+    prompt += `- Codec: ${comparison.first.codec.toUpperCase()}\n`;
+    prompt += `- Blocking: ${(comparison.first.blockingProb * 100).toFixed(1)}%\n`;
+    prompt += `- Total Traffic: ${comparison.first.totalDailyMinutes.toLocaleString()} min/day\n`;
+    prompt += `- Total Erlangs: ${comparison.first.totalErlangs.toFixed(1)}\n`;
+    prompt += `- Total Bandwidth: ${comparison.first.totalBandwidth.toFixed(2)} Mbps\n`;
+    prompt += `- Efficiency: ${comparison.first.efficiencyScore.toFixed(2)} calls/Mbps\n`;
+    prompt += `- Busiest Link: ${comparison.first.busiestLink.route} (${comparison.first.busiestLink.erlangs.toFixed(2)} Erlangs)\n`;
+    prompt += `- Highest BW: ${comparison.first.highestBandwidthLink.route} (${comparison.first.highestBandwidthLink.bandwidth.toFixed(2)} Mbps)\n\n`;
     
-    if (snapshot1.networkType === 'pstn') {
-      prompt += `PSTN Analysis Results:\n`;
-      prompt += `| From | To | Daily Minutes | Busy Hour Erlangs | Required Circuits | T-1 Count | Bandwidth (Mbps) |\n`;
-      
-      snapshot1.trafficData.forEach(link => {
-        prompt += `| ${link.from} | ${link.to} | ${link.dailyMinutes.toLocaleString()} | ${link.busyHourErlangs.toFixed(2)} | ${link.requiredCircuits} | ${link.t1Count} | ${link.bandwidthMbps.toFixed(2)} |\n`;
-      });
-    } else {
-      prompt += `VoIP Analysis Results:\n`;
-      prompt += `Codec: ${snapshot1.codec.toUpperCase()}\n`;
-      prompt += `| From | To | Daily Minutes | Busy Hour Erlangs | Bandwidth per Call (kbps) | Total Bandwidth (Mbps) |\n`;
-      
-      snapshot1.trafficData.forEach(link => {
-        prompt += `| ${link.from} | ${link.to} | ${link.dailyMinutes.toLocaleString()} | ${link.busyHourErlangs.toFixed(2)} | ${link.totalBandwidthPerCall.toFixed(0)} | ${link.totalBandwidthMbps.toFixed(2)} |\n`;
-      });
-    }
+    prompt += `ANALYSIS 2 (${label2}):\n`;
+    prompt += `- Type: ${comparison.second.networkType.toUpperCase()}\n`;
+    prompt += `- Codec: ${comparison.second.codec.toUpperCase()}\n`;
+    prompt += `- Blocking: ${(comparison.second.blockingProb * 100).toFixed(1)}%\n`;
+    prompt += `- Total Traffic: ${comparison.second.totalDailyMinutes.toLocaleString()} min/day\n`;
+    prompt += `- Total Erlangs: ${comparison.second.totalErlangs.toFixed(1)}\n`;
+    prompt += `- Total Bandwidth: ${comparison.second.totalBandwidth.toFixed(2)} Mbps\n`;
+    prompt += `- Efficiency: ${comparison.second.efficiencyScore.toFixed(2)} calls/Mbps\n`;
+    prompt += `- Busiest Link: ${comparison.second.busiestLink.route} (${comparison.second.busiestLink.erlangs.toFixed(2)} Erlangs)\n`;
+    prompt += `- Highest BW: ${comparison.second.highestBandwidthLink.route} (${comparison.second.highestBandwidthLink.bandwidth.toFixed(2)} Mbps)\n\n`;
     
-    // Second snapshot
-    prompt += `\n${label2.toUpperCase()}:\n`;
-    prompt += `Network Type: ${snapshot2.networkType.toUpperCase()}\n`;
-    prompt += `Timestamp: ${snapshot2.timestamp}\n`;
-    prompt += `Blocking Probability: ${snapshot2.blockingProb}\n`;
-    
-    if (snapshot2.networkType === 'pstn') {
-      prompt += `PSTN Analysis Results:\n`;
-      prompt += `| From | To | Daily Minutes | Busy Hour Erlangs | Required Circuits | T-1 Count | Bandwidth (Mbps) |\n`;
-      
-      snapshot2.trafficData.forEach(link => {
-        prompt += `| ${link.from} | ${link.to} | ${link.dailyMinutes.toLocaleString()} | ${link.busyHourErlangs.toFixed(2)} | ${link.requiredCircuits} | ${link.t1Count} | ${link.bandwidthMbps.toFixed(2)} |\n`;
-      });
-    } else {
-      prompt += `VoIP Analysis Results:\n`;
-      prompt += `Codec: ${snapshot2.codec.toUpperCase()}\n`;
-      prompt += `| From | To | Daily Minutes | Busy Hour Erlangs | Bandwidth per Call (kbps) | Total Bandwidth (Mbps) |\n`;
-      
-      snapshot2.trafficData.forEach(link => {
-        prompt += `| ${link.from} | ${link.to} | ${link.dailyMinutes.toLocaleString()} | ${link.busyHourErlangs.toFixed(2)} | ${link.totalBandwidthPerCall.toFixed(0)} | ${link.totalBandwidthMbps.toFixed(2)} |\n`;
-      });
-    }
-    
-    // Add explanations if available
-    if (snapshot1.explanation) {
-      prompt += `\n${label1.toUpperCase()} EXPLANATION (${snapshot1.modelUsed}):\n${snapshot1.explanation}\n`;
-    }
-    
-    if (snapshot2.explanation) {
-      prompt += `\n${label2.toUpperCase()} EXPLANATION (${snapshot2.modelUsed}):\n${snapshot2.explanation}\n`;
-    }
+    prompt += `COMPARISON METRICS:\n`;
+    prompt += `- Bandwidth Difference: ${comparison.comparisons.bandwidthDifference.toFixed(2)} Mbps (${comparison.comparisons.bandwidthDifference > 0 ? '+' : ''}${comparison.comparisons.bandwidthDifference.toFixed(2)})\n`;
+    prompt += `- Efficiency Difference: ${comparison.comparisons.efficiencyDifference.toFixed(2)} calls/Mbps (${comparison.comparisons.efficiencyDifference > 0 ? '+' : ''}${comparison.comparisons.efficiencyDifference.toFixed(2)})\n`;
+    prompt += `- Erlangs Difference: ${comparison.comparisons.erlangsDifference.toFixed(1)} (${comparison.comparisons.erlangsDifference > 0 ? '+' : ''}${comparison.comparisons.erlangsDifference.toFixed(1)})\n`;
+    prompt += `- More Efficient: Analysis ${comparison.comparisons.moreEfficient === 'second' ? '2' : '1'}\n`;
+    prompt += `- More Bandwidth: Analysis ${comparison.comparisons.moreBandwidth === 'second' ? '2' : '1'}\n`;
+    prompt += `- Efficiency Ratio: ${comparison.comparisons.efficiencyRatio.toFixed(2)}x\n`;
+    prompt += `- Bandwidth Ratio: ${comparison.comparisons.bandwidthRatio.toFixed(2)}x\n\n`;
     
     prompt += `\nPlease provide a comprehensive, structured comparison summary with the following sections:\n\n`;
     prompt += `## 1. Executive Summary\n`;
@@ -1534,4 +1512,97 @@ async function getAiComparisonSummary(snapshot1, snapshot2) {
       aiSummaryBtn.disabled = false;
     }
   }
+}
+
+// Add precomputed data functions for AI optimization
+function generateSnapshotSummary(snapshot) {
+  const { networkType, codec, blockingProb, trafficData } = snapshot;
+  
+  // Calculate key metrics
+  const totalDailyMinutes = trafficData.reduce((sum, link) => sum + link.dailyMinutes, 0);
+  const totalErlangs = trafficData.reduce((sum, link) => sum + link.busyHourErlangs, 0);
+  const totalBandwidth = trafficData.reduce((sum, link) => {
+    return sum + (networkType === 'pstn' ? link.bandwidthMbps : link.totalBandwidthMbps);
+  }, 0);
+  
+  // Find busiest and most efficient links
+  const busiestLink = trafficData.reduce((max, link) => 
+    link.busyHourErlangs > max.busyHourErlangs ? link : max
+  );
+  
+  const highestBandwidthLink = trafficData.reduce((max, link) => {
+    const bandwidth = networkType === 'pstn' ? link.bandwidthMbps : link.totalBandwidthMbps;
+    const maxBandwidth = networkType === 'pstn' ? max.bandwidthMbps : max.totalBandwidthMbps;
+    return bandwidth > maxBandwidth ? link : max;
+  });
+  
+  // Calculate efficiency metrics
+  const efficiencyScore = totalBandwidth > 0 ? totalErlangs / totalBandwidth : 0;
+  
+  // Generate link summaries
+  const linkSummaries = trafficData.map(link => {
+    const bandwidth = networkType === 'pstn' ? link.bandwidthMbps : link.totalBandwidthMbps;
+    return {
+      route: `${link.from} → ${link.to}`,
+      dailyMinutes: link.dailyMinutes,
+      erlangs: link.busyHourErlangs,
+      bandwidth: bandwidth,
+      ...(networkType === 'pstn' ? {
+        circuits: link.requiredCircuits,
+        t1Count: link.t1Count
+      } : {
+        codec: link.codec,
+        bandwidthPerCall: link.totalBandwidthPerCall
+      })
+    };
+  });
+  
+  return {
+    networkType,
+    codec: codec || 'N/A',
+    blockingProb,
+    totalDailyMinutes,
+    totalErlangs,
+    totalBandwidth,
+    efficiencyScore,
+    busiestLink: {
+      route: `${busiestLink.from} → ${busiestLink.to}`,
+      erlangs: busiestLink.busyHourErlangs,
+      dailyMinutes: busiestLink.dailyMinutes
+    },
+    highestBandwidthLink: {
+      route: `${highestBandwidthLink.from} → ${highestBandwidthLink.to}`,
+      bandwidth: networkType === 'pstn' ? highestBandwidthLink.bandwidthMbps : highestBandwidthLink.totalBandwidthMbps
+    },
+    linkCount: trafficData.length,
+    linkSummaries
+  };
+}
+
+function generateComparisonSummary(snapshot1, snapshot2) {
+  const summary1 = generateSnapshotSummary(snapshot1);
+  const summary2 = generateSnapshotSummary(snapshot2);
+  
+  // Calculate comparison metrics
+  const bandwidthDifference = summary2.totalBandwidth - summary1.totalBandwidth;
+  const efficiencyDifference = summary2.efficiencyScore - summary1.efficiencyScore;
+  const erlangsDifference = summary2.totalErlangs - summary1.totalErlangs;
+  
+  // Determine which is more efficient
+  const moreEfficient = efficiencyDifference > 0 ? 'second' : 'first';
+  const moreBandwidth = bandwidthDifference > 0 ? 'second' : 'first';
+  
+  return {
+    first: summary1,
+    second: summary2,
+    comparisons: {
+      bandwidthDifference,
+      efficiencyDifference,
+      erlangsDifference,
+      moreEfficient,
+      moreBandwidth,
+      efficiencyRatio: summary1.efficiencyScore > 0 ? summary2.efficiencyScore / summary1.efficiencyScore : 0,
+      bandwidthRatio: summary1.totalBandwidth > 0 ? summary2.totalBandwidth / summary1.totalBandwidth : 0
+    }
+  };
 }
