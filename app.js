@@ -649,7 +649,28 @@ async function explainResults(snapshotId) {
       });
     }
     
-    prompt += `\nPlease provide a clear explanation of these results, including what the numbers mean and any insights about the network performance. Use markdown formatting for better readability.`;
+    prompt += `\nPlease provide a comprehensive explanation with the following structure:\n\n`;
+    prompt += `## Overview\n`;
+    prompt += `- Brief description of the analysis type and methodology\n`;
+    prompt += `- Key parameters and their significance\n\n`;
+    prompt += `## Results Analysis\n`;
+    prompt += `- Detailed interpretation of the traffic data\n`;
+    prompt += `- What the numbers mean in practical terms\n`;
+    prompt += `- Performance implications for each link\n\n`;
+    prompt += `## Technical Insights\n`;
+    prompt += `- Bandwidth utilization patterns\n`;
+    prompt += `- Infrastructure requirements\n`;
+    prompt += `- Scalability considerations\n\n`;
+    prompt += `## Recommendations\n`;
+    prompt += `- Implementation considerations\n`;
+    prompt += `- Potential optimizations\n`;
+    prompt += `- Risk factors to monitor\n\n`;
+    prompt += `IMPORTANT:\n`;
+    prompt += `- Use clear, professional language\n`;
+    prompt += `- Include specific insights about the data\n`;
+    prompt += `- Use markdown formatting for better readability\n`;
+    prompt += `- Focus on practical implications for network engineers\n`;
+    prompt += `- Do not ask questions or offer additional assistance at the end\n`;
     
     // Make API request to Gemini with the selected model
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`, {
@@ -1181,13 +1202,36 @@ async function getAiComparisonSummary(snapshot1, snapshot2) {
       prompt += `\nANALYSIS 2 EXPLANATION (${snapshot2.modelUsed}):\n${snapshot2.explanation}\n`;
     }
     
-    prompt += `\nPlease provide a comprehensive comparison summary that:\n`;
-    prompt += `1. Highlights the key differences between these two analyses\n`;
-    prompt += `2. Explains what these differences mean in practical terms\n`;
-    prompt += `3. Provides insights about network performance implications\n`;
-    prompt += `4. Offers recommendations based on the comparison\n`;
-    prompt += `5. Uses markdown formatting for better readability, including tables for comparing metrics\n`;
-    prompt += `6. IMPORTANT: Do not ask questions or offer additional assistance at the end. Just provide the summary and conclude.\n`;
+    prompt += `\nPlease provide a comprehensive, structured comparison summary with the following sections:\n\n`;
+    prompt += `## 1. Executive Summary\n`;
+    prompt += `- Brief overview of the two analyses being compared\n`;
+    prompt += `- Key findings at a glance\n\n`;
+    prompt += `## 2. Technical Comparison\n`;
+    prompt += `- Detailed comparison of network metrics\n`;
+    prompt += `- Use tables to clearly show differences\n`;
+    prompt += `- Highlight significant variations\n\n`;
+    prompt += `## 3. Performance Analysis\n`;
+    prompt += `- Bandwidth efficiency comparison\n`;
+    prompt += `- Infrastructure requirements\n`;
+    prompt += `- Scalability implications\n\n`;
+    prompt += `## 4. Cost and Resource Implications\n`;
+    prompt += `- Infrastructure costs\n`;
+    prompt += `- Maintenance requirements\n`;
+    prompt += `- Resource utilization\n\n`;
+    prompt += `## 5. Recommendations\n`;
+    prompt += `- Which approach might be better for different scenarios\n`;
+    prompt += `- Implementation considerations\n`;
+    prompt += `- Risk factors to consider\n\n`;
+    prompt += `## 6. Conclusion\n`;
+    prompt += `- Summary of key insights\n`;
+    prompt += `- Final recommendations\n\n`;
+    prompt += `IMPORTANT GUIDELINES:\n`;
+    prompt += `- Use clear, professional language\n`;
+    prompt += `- Include specific numbers and percentages where relevant\n`;
+    prompt += `- Use markdown tables for metric comparisons\n`;
+    prompt += `- Provide actionable insights\n`;
+    prompt += `- Do not ask questions or offer additional assistance at the end\n`;
+    prompt += `- Focus on practical implications for network engineers and decision makers\n`;
     
     // Make API request to Gemini with the selected model
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`, {
