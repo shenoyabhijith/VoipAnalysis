@@ -166,8 +166,9 @@
     let timeRemaining = 10;
     const countdownTimer = setInterval(() => {
       timeRemaining--;
+      const elapsed = 10 - timeRemaining;
       if (timeRemaining > 0) {
-        addLogEntry(logElement, `⏱️ Time remaining: ${timeRemaining} seconds`, '#f39c12');
+        addLogEntry(logElement, `⏱️ Progress: ${elapsed}s elapsed, ${timeRemaining}s remaining`, '#f39c12');
       }
     }, 1000);
     
@@ -360,6 +361,20 @@
       if (bandwidthElement) {
         updates.push(() => {
           bandwidthElement.textContent = `${data.bandwidthUsage.toFixed(2)} Mbps`;
+        });
+      }
+
+      // Update elapsed time and progress bar
+      const elapsedTimeElement = document.getElementById(`elapsedTime-${snapshotId}`);
+      const progressBarElement = document.getElementById(`progressBar-${snapshotId}`);
+      if (elapsedTimeElement && data.startTime) {
+        const elapsed = Math.min(10, Math.floor((performance.now() - data.startTime) / 1000));
+        const progressPercent = (elapsed / 10) * 100;
+        updates.push(() => {
+          elapsedTimeElement.textContent = `${elapsed}s / 10s`;
+          if (progressBarElement) {
+            progressBarElement.style.width = `${progressPercent}%`;
+          }
         });
       }
 

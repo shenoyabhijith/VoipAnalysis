@@ -646,6 +646,33 @@ body {
   margin-bottom: 0;
 }
 
+/* Elapsed time styling */
+.sim-metric .metric-value[id*="elapsedTime"] {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: white;
+  padding: 0.3rem 0.8rem;
+  border-radius: 6px;
+  font-weight: 700;
+  box-shadow: 0 2px 4px rgba(52, 152, 219, 0.3);
+}
+
+/* Progress indicator for simulation */
+.simulation-progress {
+  background: #ecf0f1;
+  border-radius: 6px;
+  height: 8px;
+  margin: 0.5rem 0;
+  overflow: hidden;
+}
+
+.simulation-progress-bar {
+  background: linear-gradient(90deg, #3498db, #2980b9);
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.5s ease;
+  box-shadow: 0 1px 3px rgba(52, 152, 219, 0.3);
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .metrics-grid {
