@@ -374,7 +374,7 @@ async function loadAvailableModels() {
 }
 
 function generateTrafficMatrix() {
-  // Create a 3x3 matrix where each location's outgoing traffic is split equally to the other two
+  // Create a 3x3 matrix with randomized traffic distribution
   const matrix = [
     [0, 0, 0],  // From US
     [0, 0, 0],  // From China
@@ -384,12 +384,18 @@ function generateTrafficMatrix() {
   for (let i = 0; i < LOCATIONS.length; i++) {
     const location = LOCATIONS[i];
     const totalOutgoing = TOTAL_TRAFFIC[location];
-    const splitAmount = totalOutgoing / 2;
     
+    // Create random distribution weights for the two destinations
+    const weight1 = 0.3 + Math.random() * 0.4; // 30-70% range
+    const weight2 = 1 - weight1;
+    
+    let destIndex = 0;
     for (let j = 0; j < LOCATIONS.length; j++) {
       if (i === j) continue; // Skip self-links
       
-      matrix[i][j] = splitAmount;
+      const weight = destIndex === 0 ? weight1 : weight2;
+      matrix[i][j] = totalOutgoing * weight;
+      destIndex++;
     }
   }
   
@@ -845,10 +851,12 @@ async function explainResults(snapshotId) {
   }
   
   // Show loading state
-  const explainBtn = document.getElementById(`explain-btn-${snapshotId}`);
-  const originalText = explainBtn.textContent;
-  explainBtn.innerHTML = '<span class="loading-spinner"></span> Explaining...';
-  explainBtn.disabled = true;
+  const explainBtn = document.querySelector(`#snapshot-${snapshotId} .explain-btn`);
+  if (explainBtn) {
+    const originalText = explainBtn.textContent;
+    explainBtn.innerHTML = '<span class="loading-spinner"></span> Explaining...';
+    explainBtn.disabled = true;
+  }
   
   try {
     // Generate precomputed summary for efficient AI processing
@@ -933,15 +941,20 @@ async function explainResults(snapshotId) {
       snapshots[snapshotIndex].modelUsed = selectedModel;
     }
     
-    // Re-render the snapshot to include the explanation
-    renderSnapshot(snapshots[snapshotIndex]);
+    // Update the explanation in the DOM
+    const explanationElement = document.getElementById(`explanation-${snapshotId}`);
+    if (explanationElement) {
+      explanationElement.innerHTML = simpleMarkdownToHtml(explanation);
+    }
     
   } catch (error) {
     resultsSection.innerHTML += `<div class="error-message">Error explaining results: ${error.message}</div>`;
     
     // Reset button state
-    explainBtn.textContent = originalText;
-    explainBtn.disabled = false;
+    if (explainBtn) {
+      explainBtn.textContent = originalText;
+      explainBtn.disabled = false;
+    }
   }
 }
 
@@ -1230,11 +1243,64 @@ async function compareSelected() {
   const label1 = generateDescriptiveLabel(snapshot1);
   const label2 = generateDescriptiveLabel(snapshot2);
   
-  // Create unified comparison table
-  comparisonHtml += '<h3>Metrics Comparison</h3>';
+  // Get simulation data for both snapshots
+  const simData1 = getSimulationData(snapshot1.id);
+  const simData2 = getSimulationData(snapshot2.id);
   
-  const headers = ['From', 'To', 'Metric', label1, label2, 'Difference'];
+  // Create simulation-based comparison table
+  comparisonHtml += '<h3>Simulation Results Comparison</h3>';
+  
+  const headers = ['Metric', label1, label2, 'Difference'];
   const rows = [];
+  
+  // Add simulation-based metrics
+  rows.push([
+    'Total Calls Attempted',
+    simData1.totalCalls.toString(),
+    simData2.totalCalls.toString(),
+    (simData1.totalCalls - simData2.totalCalls).toString()
+  ]);
+  
+  rows.push([
+    'Blocked Calls',
+    simData1.blockedCalls.toString(),
+    simData2.blockedCalls.toString(),
+    (simData1.blockedCalls - simData2.blockedCalls).toString()
+  ]);
+  
+  rows.push([
+    'Actual Blocking Rate',
+    simData1.actualBlockingRate.toFixed(1) + '%',
+    simData2.actualBlockingRate.toFixed(1) + '%',
+    (simData1.actualBlockingRate - simData2.actualBlockingRate).toFixed(1) + '%'
+  ]);
+  
+  rows.push([
+    'Peak Bandwidth Usage',
+    simData1.bandwidthUsage.toFixed(2) + ' Mbps',
+    simData2.bandwidthUsage.toFixed(2) + ' Mbps',
+    (simData1.bandwidthUsage - simData2.bandwidthUsage).toFixed(2) + ' Mbps'
+  ]);
+  
+  rows.push([
+    'Efficiency Score',
+    simData1.efficiencyScore.toFixed(2) + ' calls/Mbps',
+    simData2.efficiencyScore.toFixed(2) + ' calls/Mbps',
+    (simData1.efficiencyScore - simData2.efficiencyScore).toFixed(2) + ' calls/Mbps'
+  ]);
+  
+  rows.push([
+    'Peak Active Calls',
+    simData1.peakActiveCalls.toString(),
+    simData2.peakActiveCalls.toString(),
+    (simData1.peakActiveCalls - simData2.peakActiveCalls).toString()
+  ]);
+  
+  // Add theoretical metrics for reference
+  comparisonHtml += '<h3>Theoretical Analysis Comparison</h3>';
+  
+  const theoreticalHeaders = ['From', 'To', 'Metric', label1, label2, 'Difference'];
+  const theoreticalRows = [];
   
   // Add common metrics for both snapshots
   const commonLinks = new Set();
@@ -1253,7 +1319,7 @@ async function compareSelected() {
     
     if (link1 && link2) {
       // Daily Minutes
-      rows.push([
+      theoreticalRows.push([
         from,
         to,
         'Daily Minutes',
@@ -1263,7 +1329,7 @@ async function compareSelected() {
       ]);
       
       // Busy Hour Erlangs
-      rows.push([
+      theoreticalRows.push([
         from,
         to,
         'Busy Hour Erlangs',
@@ -1742,4 +1808,37 @@ function showPostSimulationResults(snapshotId) {
       animateDiagram(svg);
     }
   }
+}
+
+// Function to get simulation data for a snapshot
+function getSimulationData(snapshotId) {
+  const simulationData = window.simulationData[snapshotId];
+  if (!simulationData) {
+    return {
+      totalCalls: 0,
+      blockedCalls: 0,
+      activeCalls: 0,
+      bandwidthUsage: 0,
+      peakActiveCalls: 0,
+      averageCallRate: 0,
+      actualBlockingRate: 0,
+      efficiencyScore: 0
+    };
+  }
+  
+  const totalCalls = simulationData.totalCalls || 0;
+  const blockedCalls = simulationData.blockedCalls || 0;
+  const actualBlockingRate = totalCalls > 0 ? (blockedCalls / totalCalls) * 100 : 0;
+  const efficiencyScore = simulationData.bandwidthUsage > 0 ? (totalCalls / simulationData.bandwidthUsage) : 0;
+  
+  return {
+    totalCalls,
+    blockedCalls,
+    activeCalls: simulationData.activeCalls || 0,
+    bandwidthUsage: simulationData.bandwidthUsage || 0,
+    peakActiveCalls: simulationData.peakActiveCalls || 0,
+    averageCallRate: simulationData.averageCallRate || 0,
+    actualBlockingRate,
+    efficiencyScore
+  };
 }

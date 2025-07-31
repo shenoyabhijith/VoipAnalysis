@@ -135,14 +135,21 @@
       addLogEntry(logElement, `  • ${link.name}: ${link.rate.toFixed(2)} calls/min, max ${link.maxConcurrentCalls} calls`, '#9b59b6');
     });
 
-    // Start call generation for each link with dynamic rates
+    // Start call generation for each link with dynamic rates and randomness
     links.forEach((link, index) => {
-      const interval = Math.max(500, 1000 / link.rate); // Convert calls per minute to interval
-      console.log(`Setting up dynamic timer for ${link.name} with interval: ${interval}ms (${link.rate} calls/min)`);
+      const baseInterval = Math.max(500, 1000 / link.rate); // Convert calls per minute to interval
+      console.log(`Setting up dynamic timer for ${link.name} with interval: ${baseInterval}ms (${link.rate} calls/min)`);
       
       const timer = setInterval(() => {
-        spawnDynamicCall(snapshotId, link, index);
-      }, interval);
+        // Add randomness to call generation (±20% variation)
+        const randomFactor = 0.8 + Math.random() * 0.4; // 0.8 to 1.2
+        const actualInterval = baseInterval * randomFactor;
+        
+        // Randomly decide if we should spawn a call (adds more randomness)
+        if (Math.random() < 0.8) { // 80% chance to spawn
+          spawnDynamicCall(snapshotId, link, index);
+        }
+      }, baseInterval);
       
       window.simulationTimers[`${snapshotId}-${index}`] = timer;
     });
@@ -262,6 +269,11 @@
     const blockingProbability = link.blockingProb * Math.pow(utilization, 2); // Higher blocking as utilization increases
     const isBlocked = Math.random() < blockingProbability;
     
+    // Debug logging for blocking
+    if (Math.random() < 0.1) { // Log 10% of calls for debugging
+      console.log(`Call ${callId}: utilization=${utilization.toFixed(2)}, blockingProb=${(blockingProbability * 100).toFixed(1)}%, isBlocked=${isBlocked}`);
+    }
+    
     const callId = (link.callId || 0) + 1;
     link.callId = callId;
 
@@ -276,6 +288,14 @@
     data.activeCalls++;
     data.totalCalls++;
     data.bandwidthUsage += link.bandwidth;
+    
+    // Track peak values
+    if (data.activeCalls > (data.peakActiveCalls || 0)) {
+      data.peakActiveCalls = data.activeCalls;
+    }
+    if (data.bandwidthUsage > (data.peakBandwidthUsage || 0)) {
+      data.peakBandwidthUsage = data.bandwidthUsage;
+    }
 
     addLogEntry(logElement, `🟢 Call ${callId} started: ${link.name} (${currentActiveCalls + 1}/${maxCalls} capacity, ${link.bandwidth.toFixed(3)} Mbps)`, '#2ecc71');
 
