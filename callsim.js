@@ -134,10 +134,10 @@
       window.simulationTimers[`${snapshotId}-${index}`] = timer;
     });
 
-    // Start metrics update
+    // Start metrics update with reduced frequency
     const metricsTimer = setInterval(() => {
       updateSimulationMetrics(snapshotId);
-    }, 1000);
+    }, 2000); // Update every 2 seconds instead of 1
     
     window.simulationTimers[`${snapshotId}-metrics`] = metricsTimer;
     
@@ -297,48 +297,112 @@
     const data = window.simulationData[snapshotId];
     if (!data) return;
 
-    const activeCallsElement = document.getElementById(`activeCalls-${snapshotId}`);
-    const callRateElement = document.getElementById(`callRate-${snapshotId}`);
-    const bandwidthElement = document.getElementById(`bandwidthUsage-${snapshotId}`);
+    // Throttle updates to reduce DOM jitter
+    if (!data.lastUpdateTime || (performance.now() - data.lastUpdateTime) > 500) {
+      data.lastUpdateTime = performance.now();
+      
+      // Batch all DOM updates
+      const updates = [];
+      
+      const activeCallsElement = document.getElementById(`activeCalls-${snapshotId}`);
+      if (activeCallsElement) {
+        updates.push(() => {
+          activeCallsElement.textContent = data.activeCalls;
+        });
+      }
 
-    if (activeCallsElement) {
-      activeCallsElement.textContent = data.activeCalls;
-    }
+      const callRateElement = document.getElementById(`callRate-${snapshotId}`);
+      if (callRateElement && data.startTime) {
+        const elapsed = (performance.now() - data.startTime) / 1000;
+        const rate = elapsed > 0 ? (data.totalCalls / elapsed * 60).toFixed(1) : '0.0';
+        updates.push(() => {
+          callRateElement.textContent = `${rate} calls/min`;
+        });
+      }
 
-    if (callRateElement && data.startTime) {
-      const elapsed = (performance.now() - data.startTime) / 1000;
-      const rate = elapsed > 0 ? (data.totalCalls / elapsed * 60).toFixed(1) : '0.0';
-      callRateElement.textContent = `${rate} calls/min`;
-    }
+      const bandwidthElement = document.getElementById(`bandwidthUsage-${snapshotId}`);
+      if (bandwidthElement) {
+        updates.push(() => {
+          bandwidthElement.textContent = `${data.bandwidthUsage.toFixed(2)} Mbps`;
+        });
+      }
 
-    if (bandwidthElement) {
-      bandwidthElement.textContent = `${data.bandwidthUsage.toFixed(2)} Mbps`;
-    }
+      // Update blocked calls if element exists
+      const blockedCallsElement = document.getElementById(`blockedCalls-${snapshotId}`);
+      if (blockedCallsElement) {
+        updates.push(() => {
+          blockedCallsElement.textContent = data.blockedCalls || 0;
+        });
+      }
 
-    // Update blocked calls if element exists
-    const blockedCallsElement = document.getElementById(`blockedCalls-${snapshotId}`);
-    if (blockedCallsElement) {
-      blockedCallsElement.textContent = data.blockedCalls || 0;
-    }
+      // Update blocking rate if element exists
+      const blockingRateElement = document.getElementById(`blockingRate-${snapshotId}`);
+      if (blockingRateElement && data.totalCalls > 0) {
+        const blockingRate = ((data.blockedCalls || 0) / (data.totalCalls + (data.blockedCalls || 0)) * 100).toFixed(1);
+        updates.push(() => {
+          blockingRateElement.textContent = `${blockingRate}%`;
+        });
+      }
 
-    // Update blocking rate if element exists
-    const blockingRateElement = document.getElementById(`blockingRate-${snapshotId}`);
-    if (blockingRateElement && data.totalCalls > 0) {
-      const blockingRate = ((data.blockedCalls || 0) / (data.totalCalls + (data.blockedCalls || 0)) * 100).toFixed(1);
-      blockingRateElement.textContent = `${blockingRate}%`;
+      // Execute all updates in a single batch
+      if (updates.length > 0) {
+        requestAnimationFrame(() => {
+          updates.forEach(update => update());
+        });
+      }
     }
   }
 
   function addLogEntry(logElement, message, color = '#000') {
     if (!logElement) return;
     
+    // Create log entry
     const entry = document.createElement('div');
     entry.className = 'log-entry';
     entry.textContent = new Date().toLocaleTimeString() + '  ' + message;
     entry.style.color = color;
     
-    logElement.appendChild(entry);
-    logElement.scrollTop = logElement.scrollHeight;
+    // Batch log updates to reduce DOM manipulation
+    if (!logElement.batchUpdates) {
+      logElement.batchUpdates = [];
+      logElement.batchTimeout = null;
+    }
+    
+    logElement.batchUpdates.push(entry);
+    
+    // Clear existing timeout and set new one
+    if (logElement.batchTimeout) {
+      clearTimeout(logElement.batchTimeout);
+    }
+    
+    logElement.batchTimeout = setTimeout(() => {
+      // Add all batched entries at once
+      logElement.batchUpdates.forEach(entry => {
+        logElement.appendChild(entry);
+      });
+      
+      // Clear the batch
+      logElement.batchUpdates = [];
+      logElement.batchTimeout = null;
+      
+      // Limit log entries to prevent performance issues (keep last 50 entries)
+      const maxEntries = 50;
+      const entries = logElement.querySelectorAll('.log-entry');
+      if (entries.length > maxEntries) {
+        const entriesToRemove = entries.length - maxEntries;
+        for (let i = 0; i < entriesToRemove; i++) {
+          entries[i].remove();
+        }
+      }
+      
+      // Smooth scroll to bottom
+      if (logElement.scrollHeight > logElement.clientHeight) {
+        logElement.scrollTo({
+          top: logElement.scrollHeight,
+          behavior: 'smooth'
+        });
+      }
+    }, 100); // Batch updates every 100ms
   }
 
   // Initialize simulations when DOM is ready

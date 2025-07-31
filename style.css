@@ -576,11 +576,15 @@ body {
   transform: none;
 }
 
+/* Optimized simulation metrics for smoother updates */
 .simulation-metrics {
   display: flex;
   gap: 2rem;
   margin-bottom: 1.5rem;
   flex-wrap: wrap;
+  /* Hardware acceleration for smoother updates */
+  transform: translateZ(0);
+  will-change: contents;
 }
 
 .sim-metric {
@@ -592,6 +596,9 @@ body {
   border-radius: 8px;
   border: 1px solid #e9ecef;
   min-width: 120px;
+  /* Optimize for frequent updates */
+  transform: translateZ(0);
+  will-change: contents;
 }
 
 .sim-metric .metric-label {
@@ -605,6 +612,9 @@ body {
   font-size: 1.2rem;
   font-weight: 700;
   color: #2c3e50;
+  /* Optimize text updates */
+  transform: translateZ(0);
+  will-change: contents;
 }
 
 .simulation-log {
@@ -617,11 +627,19 @@ body {
   max-height: 200px;
   overflow-y: auto;
   border: 1px solid #333;
+  /* Optimize scrolling */
+  scroll-behavior: smooth;
+  /* Hardware acceleration */
+  transform: translateZ(0);
+  will-change: scroll-position;
 }
 
 .log-entry {
   margin-bottom: 0.3rem;
   padding: 0.2rem 0;
+  /* Optimize for frequent additions */
+  transform: translateZ(0);
+  will-change: contents;
 }
 
 .log-entry:last-child {
