@@ -172,6 +172,14 @@ function renderCallSimulationSection(snapshot) {
           <span class="metric-label">Bandwidth Usage:</span>
           <span id="bandwidthUsage-${snapshot.id}" class="metric-value">0 Mbps</span>
         </div>
+        <div class="sim-metric">
+          <span class="metric-label">Blocked Calls:</span>
+          <span id="blockedCalls-${snapshot.id}" class="metric-value">0</span>
+        </div>
+        <div class="sim-metric">
+          <span class="metric-label">Blocking Rate:</span>
+          <span id="blockingRate-${snapshot.id}" class="metric-value">0.0%</span>
+        </div>
       </div>
       <div class="simulation-log" id="simLog-${snapshot.id}">
         <div class="log-entry">Ready to start simulation...</div>
