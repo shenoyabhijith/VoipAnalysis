@@ -137,16 +137,16 @@
 
     // Start call generation for each link with dynamic rates and randomness
     links.forEach((link, index) => {
-      const baseInterval = Math.max(200, 1000 / link.rate); // Faster call generation (min 200ms instead of 500ms)
+      const baseInterval = Math.max(100, 1000 / link.rate); // Much faster call generation (min 100ms)
       console.log(`Setting up dynamic timer for ${link.name} with interval: ${baseInterval}ms (${link.rate} calls/min)`);
       
       const timer = setInterval(() => {
-        // Add randomness to call generation (±20% variation)
-        const randomFactor = 0.8 + Math.random() * 0.4; // 0.8 to 1.2
+        // Add randomness to call generation (±30% variation)
+        const randomFactor = 0.7 + Math.random() * 0.6; // 0.7 to 1.3
         const actualInterval = baseInterval * randomFactor;
         
         // Randomly decide if we should spawn a call (adds more randomness)
-        if (Math.random() < 0.9) { // 90% chance to spawn (increased from 80%)
+        if (Math.random() < 0.95) { // 95% chance to spawn (increased from 90%)
           spawnDynamicCall(snapshotId, link, index);
         }
       }, baseInterval);
@@ -273,18 +273,18 @@
     // Simulate blocking based on Erlang-B formula
     // Blocking probability increases as system approaches capacity
     const utilization = currentActiveCalls / maxCalls;
-    const baseBlocking = link.blockingProb * 0.3; // 30% of base blocking probability even at low utilization
-    const utilizationBlocking = link.blockingProb * Math.pow(utilization, 2); // Quadratic blocking
-    const blockingProbability = Math.min(0.95, baseBlocking + utilizationBlocking); // Cap at 95% to ensure some calls get through
+    const baseBlocking = link.blockingProb * 0.5; // 50% of base blocking probability even at low utilization
+    const utilizationBlocking = link.blockingProb * Math.pow(utilization, 1.5); // Less aggressive than cubic but more than quadratic
+    const blockingProbability = Math.min(0.98, baseBlocking + utilizationBlocking); // Cap at 98% to ensure some calls get through
     const isBlocked = Math.random() < blockingProbability;
-    
-    // Debug logging for blocking
-    if (Math.random() < 0.2) { // Log 20% of calls for debugging
-      console.log(`Call ${callId}: utilization=${utilization.toFixed(2)}, baseBlocking=${(baseBlocking * 100).toFixed(1)}%, utilizationBlocking=${(utilizationBlocking * 100).toFixed(1)}%, totalBlocking=${(blockingProbability * 100).toFixed(1)}%, isBlocked=${isBlocked}`);
-    }
     
     const callId = (link.callId || 0) + 1;
     link.callId = callId;
+    
+    // Debug logging for blocking
+    if (Math.random() < 0.3) { // Log 30% of calls for debugging
+      console.log(`Call ${callId}: utilization=${utilization.toFixed(2)}, baseBlocking=${(baseBlocking * 100).toFixed(1)}%, utilizationBlocking=${(utilizationBlocking * 100).toFixed(1)}%, totalBlocking=${(blockingProbability * 100).toFixed(1)}%, isBlocked=${isBlocked}`);
+    }
 
     if (isBlocked) {
       // Call is blocked
@@ -296,7 +296,11 @@
     // Call is accepted
     data.activeCalls++;
     data.totalCalls++;
-    data.bandwidthUsage += link.bandwidth;
+    
+    // Add bandwidth randomization (±15% variation)
+    const bandwidthVariation = 0.85 + Math.random() * 0.3; // 0.85 to 1.15
+    const actualBandwidth = link.bandwidth * bandwidthVariation;
+    data.bandwidthUsage += actualBandwidth;
     
     // Track peak values
     if (data.activeCalls > (data.peakActiveCalls || 0)) {
@@ -312,7 +316,7 @@
     setTimeout(() => {
       if (data.activeCalls > 0) {
         data.activeCalls--;
-        data.bandwidthUsage -= link.bandwidth;
+        data.bandwidthUsage -= actualBandwidth; // Use the same randomized bandwidth
         addLogEntry(logElement, `🔴 Call ${callId} ended: ${link.name} (${data.activeCalls}/${maxCalls} capacity)`, '#e74c3c');
       }
     }, link.callDuration);
