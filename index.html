@@ -1186,21 +1186,19 @@
                         <div class="ai-content" style="border: 2px solid #f44336; background: linear-gradient(135deg, #ffebee, #ffcdd2); border-radius: 15px; padding: 25px; margin-top: 20px; box-shadow: 0 8px 25px rgba(244, 67, 54, 0.15);">
                             <h4 style="color: #f44336; margin-bottom: 20px; font-size: 1.3em; display: flex; align-items: center; gap: 10px;">
                                 <span style="font-size: 1.5em;">⚠️</span>
-                                AI Analysis Unavailable
+                                CORS Error - AI Analysis Unavailable
                             </h4>
                             <div style="line-height: 1.8; color: #333; font-size: 1.05em;">
-                                <p><strong>Issue:</strong> CORS policy prevents direct API calls from browser.</p>
+                                <p><strong>Issue:</strong> Browser security (CORS policy) prevents direct API calls.</p>
                                 <p><strong>Solution:</strong> Use a backend server or proxy to make API calls.</p>
-                                <p><strong>Current Analysis:</strong> Showing fallback analysis below.</p>
+                                <p><strong>Note:</strong> Only AI-generated analysis is available. No fallback content will be shown.</p>
                             </div>
                         </div>
-                        
-                        ${generateFallbackSummary(analysisData).replace('<div class="ai-summary">', '').replace('</div>', '')}
                     </div>
                 `;
             }
             
-            return generateFallbackSummary(analysisData);
+            // If AI generation fails, show error instead of hardcoded fallback
         }
     }
 
@@ -1351,8 +1349,43 @@
         console.log('Model:', model);
         
         if (!apiKey || !model) {
-            console.log('Using fallback - missing API key or model');
-            return generateFallbackSummary(analysisData);
+            console.log('Missing API key or model - showing error');
+            return `
+                <div class="ai-summary">
+                    <h3 style="color: #1976d2; margin-bottom: 20px; font-size: 1.5em; text-align: center;">🤖 AI Analysis Summary</h3>
+                    
+                    <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 25px;">
+                        <div class="stat-card" style="background: linear-gradient(135deg, #e3f2fd, #bbdefb); padding: 15px; border-radius: 12px; text-align: center;">
+                            <div class="stat-value" style="font-size: 1.8em; font-weight: bold; color: #1976d2;">${Math.abs(analysisData.comparison.bandwidthDiff).toFixed(0)}%</div>
+                            <div class="stat-label" style="font-size: 0.9em; color: #666; margin-top: 5px;">Bandwidth Difference</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #e8f5e8, #c8e6c9); padding: 15px; border-radius: 12px; text-align: center;">
+                            <div class="stat-value" style="font-size: 1.8em; font-weight: bold; color: #4caf50;">${analysisData.snap1.circuits || 'N/A'}</div>
+                            <div class="stat-label" style="font-size: 0.9em; color: #666; margin-top: 5px;">PSTN Circuits Required</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #fff3e0, #ffcc80); padding: 15px; border-radius: 12px; text-align: center;">
+                            <div class="stat-value" style="font-size: 1.8em; font-weight: bold; color: #ff9800;">${analysisData.snap2.codec || 'N/A'}</div>
+                            <div class="stat-label" style="font-size: 0.9em; color: #666; margin-top: 5px;">VoIP Codec Used</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #f3e5f5, #e1bee7); padding: 15px; border-radius: 12px; text-align: center;">
+                            <div class="stat-value" style="font-size: 1.8em; font-weight: bold; color: #9c27b0;">${analysisData.comparison.bandwidthRatio.toFixed(2)}x</div>
+                            <div class="stat-label" style="font-size: 0.9em; color: #666; margin-top: 5px;">Efficiency Ratio</div>
+                        </div>
+                    </div>
+                    
+                    <div class="ai-content" style="border: 2px solid #f44336; background: linear-gradient(135deg, #ffebee, #ffcdd2); border-radius: 15px; padding: 25px; margin-top: 20px; box-shadow: 0 8px 25px rgba(244, 67, 54, 0.15);">
+                        <h4 style="color: #f44336; margin-bottom: 20px; font-size: 1.3em; display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 1.5em;">⚠️</span>
+                            Missing API Configuration
+                        </h4>
+                        <div style="line-height: 1.8; color: #333; font-size: 1.05em;">
+                            <p><strong>Issue:</strong> API key or model not configured.</p>
+                            <p><strong>Solution:</strong> Please enter your Gemini API key and select a model.</p>
+                            <p><strong>Note:</strong> Only AI-generated analysis is available. No fallback content will be shown.</p>
+                        </div>
+                    </div>
+                </div>
+            `;
         }
         
         try {
@@ -1488,64 +1521,55 @@ Write in simple, clear language that a network engineer can understand. Focus on
                         <div class="ai-content" style="border: 2px solid #f44336; background: linear-gradient(135deg, #ffebee, #ffcdd2); border-radius: 15px; padding: 25px; margin-top: 20px; box-shadow: 0 8px 25px rgba(244, 67, 54, 0.15);">
                             <h4 style="color: #f44336; margin-bottom: 20px; font-size: 1.3em; display: flex; align-items: center; gap: 10px;">
                                 <span style="font-size: 1.5em;">⚠️</span>
-                                AI Analysis Unavailable
+                                CORS Error - AI Analysis Unavailable
                             </h4>
                             <div style="line-height: 1.8; color: #333; font-size: 1.05em;">
-                                <p><strong>Issue:</strong> CORS policy prevents direct API calls from browser.</p>
+                                <p><strong>Issue:</strong> Browser security (CORS policy) prevents direct API calls.</p>
                                 <p><strong>Solution:</strong> Use a backend server or proxy to make API calls.</p>
-                                <p><strong>Current Analysis:</strong> Showing fallback analysis below.</p>
+                                <p><strong>Note:</strong> Only AI-generated analysis is available. No fallback content will be shown.</p>
                             </div>
                         </div>
-                        
-                        ${generateFallbackSummary(analysisData).replace('<div class="ai-summary">', '').replace('</div>', '')}
                     </div>
                 `;
             }
             
-            return generateFallbackSummary(analysisData);
-        }
-    }
-
-    function generateFallbackSummary(analysisData) {
-        const { snap1, snap2, comparison } = analysisData;
-        
-        let comparisonType, efficiency, recommendation;
-        
-        if (snap1.type === snap2.type) {
-            if (snap1.type === 'PSTN') {
-                comparisonType = `PSTN with ${(snap1.blocking * 100).toFixed(1)}% vs ${(snap2.blocking * 100).toFixed(1)}% blocking`;
-                efficiency = `Lower blocking probability requires ${Math.abs(comparison.bandwidthRatio - 1).toFixed(2)}x more bandwidth`;
-                recommendation = snap1.blocking < snap2.blocking 
-                    ? 'Higher blocking probability recommended for cost efficiency' 
-                    : 'Lower blocking probability recommended for better service quality';
-            } else {
-                comparisonType = `VoIP with ${snap1.codec} vs ${snap2.codec} codecs`;
-                efficiency = `${snap1.codec} vs ${snap2.codec} shows ${Math.abs(comparison.bandwidthRatio - 1).toFixed(2)}x bandwidth difference`;
-                recommendation = comparison.bandwidthRatio > 1 
-                    ? `${snap2.codec} recommended for bandwidth efficiency` 
-                    : `${snap1.codec} may provide better quality`;
-            }
-        } else {
-            comparisonType = `${snap1.type} vs ${snap2.type} comparison`;
-            efficiency = `${snap1.type} requires ${comparison.bandwidthRatio.toFixed(2)}x more bandwidth than ${snap2.type}`;
-            recommendation = snap1.type === 'PSTN' 
-                ? 'VoIP recommended for modern networks and cost efficiency' 
-                : 'PSTN may be required for legacy system compatibility';
-        }
-        
-        return `
-            <div class="fallback-content" style="border: 2px solid #9c27b0; background: linear-gradient(135deg, #f3e5f5, #e1bee7); border-radius: 15px; padding: 25px; margin-top: 20px; box-shadow: 0 8px 25px rgba(156, 39, 176, 0.15);">
-                <h4 style="color: #9c27b0; margin-bottom: 20px; font-size: 1.3em; display: flex; align-items: center; gap: 10px;">
-                    <span style="font-size: 1.5em;">📊</span>
-                    Analysis Overview
-                </h4>
-                <div style="line-height: 1.8; color: #333; font-size: 1.05em;">
-                    <p style="margin-bottom: 15px;"><strong style="color: #1976d2;">Comparison Type:</strong> ${comparisonType}</p>
-                    <p style="margin-bottom: 15px;"><strong style="color: #4caf50;">Efficiency:</strong> ${efficiency}</p>
-                    <p style="margin-bottom: 15px;"><strong style="color: #ff9800;">Recommendation:</strong> ${recommendation}</p>
+            // If AI generation fails, show error instead of hardcoded fallback
+            return `
+                <div class="ai-summary">
+                    <h3 style="color: #1976d2; margin-bottom: 20px; font-size: 1.5em; text-align: center;">🤖 AI Analysis Summary</h3>
+                    
+                    <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 25px;">
+                        <div class="stat-card" style="background: linear-gradient(135deg, #e3f2fd, #bbdefb); padding: 15px; border-radius: 12px; text-align: center;">
+                            <div class="stat-value" style="font-size: 1.8em; font-weight: bold; color: #1976d2;">${Math.abs(analysisData.comparison.bandwidthDiff).toFixed(0)}%</div>
+                            <div class="stat-label" style="font-size: 0.9em; color: #666; margin-top: 5px;">Bandwidth Difference</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #e8f5e8, #c8e6c9); padding: 15px; border-radius: 12px; text-align: center;">
+                            <div class="stat-value" style="font-size: 1.8em; font-weight: bold; color: #4caf50;">${analysisData.snap1.circuits || 'N/A'}</div>
+                            <div class="stat-label" style="font-size: 0.9em; color: #666; margin-top: 5px;">PSTN Circuits Required</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #fff3e0, #ffcc80); padding: 15px; border-radius: 12px; text-align: center;">
+                            <div class="stat-value" style="font-size: 1.8em; font-weight: bold; color: #ff9800;">${analysisData.snap2.codec || 'N/A'}</div>
+                            <div class="stat-label" style="font-size: 0.9em; color: #666; margin-top: 5px;">VoIP Codec Used</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #f3e5f5, #e1bee7); padding: 15px; border-radius: 12px; text-align: center;">
+                            <div class="stat-value" style="font-size: 1.8em; font-weight: bold; color: #9c27b0;">${analysisData.comparison.bandwidthRatio.toFixed(2)}x</div>
+                            <div class="stat-label" style="font-size: 0.9em; color: #666; margin-top: 5px;">Efficiency Ratio</div>
+                        </div>
+                    </div>
+                    
+                    <div class="ai-content" style="border: 2px solid #f44336; background: linear-gradient(135deg, #ffebee, #ffcdd2); border-radius: 15px; padding: 25px; margin-top: 20px; box-shadow: 0 8px 25px rgba(244, 67, 54, 0.15);">
+                        <h4 style="color: #f44336; margin-bottom: 20px; font-size: 1.3em; display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 1.5em;">⚠️</span>
+                            AI Analysis Failed
+                        </h4>
+                        <div style="line-height: 1.8; color: #333; font-size: 1.05em;">
+                            <p><strong>Error:</strong> ${error.message}</p>
+                            <p><strong>Solution:</strong> Please check your API key and try again.</p>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        `;
+            `;
+        }
     }
 
     function generateComparisonChart(snapshots) {
