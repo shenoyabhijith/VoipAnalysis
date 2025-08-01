@@ -1079,18 +1079,27 @@
 
     function compareSelected() {
         const selectedCheckboxes = document.querySelectorAll('.result-checkbox:checked');
+        
         if (selectedCheckboxes.length !== 2) {
-            showError('Please select exactly 2 results to compare.');
+            showError('Please select exactly 2 analyses to compare.');
             return;
         }
         
-        const selectedIds = Array.from(selectedCheckboxes).map(cb => cb.dataset.id);
-        const selectedSnapshots = snapshots.filter(s => selectedIds.includes(s.id));
+        const selectedSnapshots = selectedCheckboxes.map(checkbox => {
+            const snapshotId = checkbox.getAttribute('data-id');
+            return snapshots.find(s => s.id === snapshotId);
+        });
         
-        // Allow comparison of same protocol with different parameters
         const [snap1, snap2] = selectedSnapshots;
         
-        // Check if both snapshots have the same protocol AND same parameters
+        // Check if comparison already exists
+        const existingComparison = document.querySelector(`[data-comparison="${snap1.id}-${snap2.id}"], [data-comparison="${snap2.id}-${snap1.id}"]`);
+        if (existingComparison) {
+            showError('This comparison already exists. Please clear snapshots to create a new comparison.');
+            return;
+        }
+        
+        // Allow comparison of same protocol with different parameters
         if (snap1.type === snap2.type) {
             if (snap1.type === 'PSTN') {
                 if (snap1.blocking === snap2.blocking) {
@@ -1113,6 +1122,7 @@
         
         const comparisonCard = document.createElement('div');
         comparisonCard.className = 'result-card';
+        comparisonCard.setAttribute('data-comparison', `${snapshots[0].id}-${snapshots[1].id}`);
         comparisonCard.innerHTML = `
             <div class="result-header">
                 <span class="result-title">📊 Comparison Analysis: ${snapshots[0].id} vs ${snapshots[1].id}</span>
