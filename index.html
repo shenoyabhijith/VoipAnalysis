@@ -586,6 +586,19 @@
                localStorage.setItem('gemini_model', this.value);
            });
 
+           // Add event listener for codec selection to show analysis will change
+           document.getElementById('codec').addEventListener('change', function() {
+               const runBtn = document.getElementById('runBtn');
+               if (runBtn.textContent.includes('Run Analysis')) {
+                   runBtn.style.background = 'linear-gradient(45deg, #ff9800, #ff5722)';
+                   runBtn.textContent = '🔄 Analysis Updated - Run Analysis';
+                   setTimeout(() => {
+                       runBtn.style.background = 'linear-gradient(45deg, #1976d2, #42a5f5)';
+                       runBtn.textContent = '🚀 Run Analysis';
+                   }, 2000);
+               }
+           });
+
            // Add event listener for checkboxes
            document.addEventListener('change', function(e) {
                if (e.target.classList.contains('result-checkbox')) {
@@ -812,6 +825,7 @@
                    <span class="result-title">${snapshot.type} Analysis - ${snapshot.id}</span>
                    <div>
                        <span class="result-timestamp">${snapshot.timestamp}</span>
+                       ${snapshot.type === 'VoIP' ? `<span style="background: #e3f2fd; padding: 5px 10px; border-radius: 15px; font-size: 0.9em; color: #1976d2; margin-right: 10px;">Codec: ${snapshot.codec}</span>` : ''}
                        <input type="checkbox" class="result-checkbox" data-id="${snapshot.id}">
                    </div>
                </div>
@@ -868,9 +882,11 @@
            } else {
                const totalBandwidth = locations.reduce((sum, loc) => sum + snapshot.trafficData[loc].totalBandwidth, 0);
                const avgPerCall = locations.reduce((sum, loc) => sum + snapshot.trafficData[loc].totalPerCall, 0) / locations.length;
+               const codecRate = snapshot.trafficData[locations[0]].codecRate;
                
                stats.push({ value: totalBandwidth.toFixed(1) + ' Mbps', label: 'Total Bandwidth' });
                stats.push({ value: avgPerCall.toFixed(1) + ' kbps', label: 'Avg Per Call' });
+               stats.push({ value: codecRate + ' kbps', label: 'Codec Rate' });
                stats.push({ value: snapshot.codec, label: 'Codec Used' });
            }
            
