@@ -1085,7 +1085,7 @@
             return;
         }
         
-        const selectedSnapshots = selectedCheckboxes.map(checkbox => {
+        const selectedSnapshots = Array.from(selectedCheckboxes).map(checkbox => {
             const snapshotId = checkbox.getAttribute('data-id');
             return snapshots.find(s => s.id === snapshotId);
         });
