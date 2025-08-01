@@ -734,12 +734,12 @@
                
                const data = await response.json();
                
-               // Filter for main Gemini models (exclude experimental, preview, and duplicate versions)
+               // Filter for Flash and Gemma models only
                const geminiModels = data.models
                    .filter(model => {
                        const name = model.name.toLowerCase();
-                       // Include only main stable models, exclude experimental, preview, and specific versions
-                       return name.includes('gemini') && 
+                       // Include only Flash and Gemma models
+                       return (name.includes('flash') || name.includes('gemma')) && 
                               !name.includes('experimental') && 
                               !name.includes('preview') && 
                               !name.includes('embedding') &&
@@ -755,14 +755,13 @@
                        description: model.description || ''
                    }))
                    .sort((a, b) => {
-                       // Sort by priority: Pro first, then Flash, then others
+                       // Sort by priority: Flash first, then Gemma
                        const priority = {
-                           'gemini-1.5-pro': 1,
-                           'gemini-1.5-flash': 2,
-                           'gemini-2.0-pro': 3,
-                           'gemini-2.0-flash': 4,
-                           'gemini-2.5-pro': 5,
-                           'gemini-2.5-flash': 6
+                           'gemini-1.5-flash': 1,
+                           'gemini-2.0-flash': 2,
+                           'gemini-2.5-flash': 3,
+                           'gemma-2-9b': 4,
+                           'gemma-2-27b': 5
                        };
                        const aPriority = priority[a.name] || 999;
                        const bPriority = priority[b.name] || 999;
@@ -799,12 +798,13 @@
                console.error('Error loading models:', error);
                modelSelect.innerHTML = '<option value="">Error loading models</option>';
                
-               // Fallback to hardcoded models if API fails
+               // Fallback to hardcoded Flash and Gemma models if API fails
                const fallbackModels = [
-                   'gemini-1.5-pro',
                    'gemini-1.5-flash',
-                   'gemini-2.0-pro',
-                   'gemini-2.0-flash'
+                   'gemini-2.0-flash',
+                   'gemini-2.5-flash',
+                   'gemma-2-9b',
+                   'gemma-2-27b'
                ];
                
                modelSelect.innerHTML = '';
