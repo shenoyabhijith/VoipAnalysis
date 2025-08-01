@@ -466,10 +466,25 @@
 
        .ai-content {
            margin-top: 20px;
-           padding: 15px;
-           background: rgba(255, 255, 255, 0.8);
-           border-radius: 10px;
-           border-left: 4px solid #1976d2;
+           padding: 20px;
+           background: linear-gradient(135deg, #f8f9ff, #e3f2fd);
+           border-radius: 15px;
+           border-left: 5px solid #1976d2;
+           line-height: 1.6;
+           font-size: 1.1em;
+       }
+
+       .ai-content p {
+           margin-bottom: 15px;
+       }
+
+       .ai-content ul {
+           margin: 15px 0;
+           padding-left: 20px;
+       }
+
+       .ai-content li {
+           margin-bottom: 8px;
        }
    </style>
 </head>
@@ -1289,7 +1304,7 @@
         try {
             const prompt = `You are a telecommunications expert analyzing VoIP and PSTN traffic data. 
 
-Analysis Data:
+COMPARISON DATA:
 - Analysis 1: ${analysisData.snap1.type} ${analysisData.snap1.codec ? `(${analysisData.snap1.codec} codec)` : `(${(analysisData.snap1.blocking * 100).toFixed(1)}% blocking)`} - Total Bandwidth: ${analysisData.snap1.totalBandwidth.toFixed(2)} Mbps
 - Analysis 2: ${analysisData.snap2.type} ${analysisData.snap2.codec ? `(${analysisData.snap2.codec} codec)` : `(${(analysisData.snap2.blocking * 100).toFixed(1)}% blocking)`} - Total Bandwidth: ${analysisData.snap2.totalBandwidth.toFixed(2)} Mbps
 - Bandwidth Ratio: ${analysisData.comparison.bandwidthRatio.toFixed(2)}x
@@ -1297,13 +1312,22 @@ Analysis Data:
 - Traffic Distribution: US (${analysisData.comparison.trafficDistribution.US}k), China (${analysisData.comparison.trafficDistribution.China}k), UK (${analysisData.comparison.trafficDistribution.UK}k) daily minutes
 ${analysisData.snap1.circuits ? `- PSTN Circuits Required: ${analysisData.snap1.circuits}` : ''}
 
-Please provide a professional telecommunications analysis summary in HTML format with:
-1. A brief overview of the comparison
-2. Key technical insights about bandwidth efficiency
-3. Practical recommendations for network planning
-4. Cost and performance considerations
+Please provide a clear analysis in this exact format:
 
-Format the response as clean HTML with appropriate styling classes.`;
+**OVERVIEW**
+[Brief explanation of what this comparison shows]
+
+**KEY INSIGHTS**
+- [First insight about bandwidth efficiency]
+- [Second insight about cost implications]
+- [Third insight about performance trade-offs]
+
+**RECOMMENDATIONS**
+- [Specific recommendation for network planning]
+- [Cost consideration]
+- [Performance consideration]
+
+Write in simple, clear language that a network engineer can understand. Focus on practical implications.`;
 
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
                 method: 'POST',
@@ -1318,7 +1342,7 @@ Format the response as clean HTML with appropriate styling classes.`;
                     }],
                     generationConfig: {
                         temperature: 0.3,
-                        maxOutputTokens: 1000
+                        maxOutputTokens: 800
                     }
                 })
             });
