@@ -777,7 +777,9 @@
            }
            
            resultCounter++;
-           const resultId = `result_${resultCounter}`;
+           const resultId = networkType === 'PSTN' 
+               ? `PSTN-${(blockingProb * 100).toFixed(1)}%`
+               : `VoIP-${codec}`;
            const timestamp = new Date().toLocaleString();
            
            // Calculate busy hour Erlangs for each location
@@ -1010,9 +1012,16 @@
         
         let html = '<div class="comparison-container">';
         
-        // Side by side tables
-        html += `<div><h3>📞 ${snap1.type} - ${snap1.id}</h3>${generateResultTable(snap1)}</div>`;
-        html += `<div><h3>💻 ${snap2.type} - ${snap2.id}</h3>${generateResultTable(snap2)}</div>`;
+        // Side by side tables with proper titles and overflow handling
+        const snap1Title = snap1.type === 'PSTN' 
+            ? `📞 ${snap1.type} (${(snap1.blocking * 100).toFixed(1)}% blocking)`
+            : `💻 ${snap1.type} (${snap1.codec})`;
+        const snap2Title = snap2.type === 'PSTN' 
+            ? `📞 ${snap2.type} (${(snap2.blocking * 100).toFixed(1)}% blocking)`
+            : `💻 ${snap2.type} (${snap2.codec})`;
+        
+        html += `<div style="min-width: 0; overflow-x: auto;"><h3>${snap1Title} - ${snap1.id}</h3>${generateResultTable(snap1)}</div>`;
+        html += `<div style="min-width: 0; overflow-x: auto;"><h3>${snap2Title} - ${snap2.id}</h3>${generateResultTable(snap2)}</div>`;
         
         html += '</div>';
         
@@ -1102,8 +1111,32 @@
         });
         
         const bandwidthRatio = totalBandwidth1 / totalBandwidth2;
-        const efficiency = bandwidthRatio > 1 ? 'PSTN requires more bandwidth' : 'VoIP requires more bandwidth';
-        const recommendation = bandwidthRatio > 1 ? 'VoIP recommended for bandwidth efficiency' : 'PSTN may be more suitable for reliability';
+        
+        // Generate appropriate summary based on comparison type
+        let efficiency, recommendation, comparisonType;
+        
+        if (snap1.type === snap2.type) {
+            // Same protocol comparison
+            if (snap1.type === 'PSTN') {
+                const blockingDiff = ((snap2.blocking - snap1.blocking) / snap1.blocking * 100);
+                comparisonType = `PSTN with ${(snap1.blocking * 100).toFixed(1)}% vs ${(snap2.blocking * 100).toFixed(1)}% blocking`;
+                efficiency = `Lower blocking probability (${(snap1.blocking * 100).toFixed(1)}% vs ${(snap2.blocking * 100).toFixed(1)}%) requires ${Math.abs(bandwidthRatio - 1).toFixed(2)}x more bandwidth`;
+                recommendation = snap1.blocking < snap2.blocking 
+                    ? 'Higher blocking probability recommended for cost efficiency' 
+                    : 'Lower blocking probability recommended for better service quality';
+            } else {
+                comparisonType = `VoIP with ${snap1.codec} vs ${snap2.codec} codecs`;
+                efficiency = `${snap1.codec} vs ${snap2.codec} shows ${Math.abs(bandwidthRatio - 1).toFixed(2)}x bandwidth difference`;
+                recommendation = bandwidthRatio > 1 
+                    ? `${snap2.codec} recommended for bandwidth efficiency` 
+                    : `${snap1.codec} may provide better quality`;
+            }
+        } else {
+            // Different protocol comparison
+            efficiency = bandwidthRatio > 1 ? 'PSTN requires more bandwidth' : 'VoIP requires more bandwidth';
+            recommendation = bandwidthRatio > 1 ? 'VoIP recommended for bandwidth efficiency' : 'PSTN may be more suitable for reliability';
+            comparisonType = `${snap1.type} vs ${snap2.type}`;
+        }
         
         return `
             <div class="ai-summary">
@@ -1126,10 +1159,11 @@
                         <div class="stat-label">Efficiency Ratio</div>
                     </div>
                 </div>
+                <p><strong>Comparison Type:</strong> ${comparisonType}</p>
                 <p><strong>Key Findings:</strong></p>
                 <ul>
-                    <li>📊 ${efficiency} (${Math.abs(bandwidthRatio - 1).toFixed(2)}x difference)</li>
-                    <li>🔧 PSTN requires ${totalT1s} T-1 circuits across all locations</li>
+                    <li>📊 ${efficiency}</li>
+                    ${snap1.type === 'PSTN' || snap2.type === 'PSTN' ? `<li>🔧 PSTN requires ${totalT1s} T-1 circuits across all locations</li>` : ''}
                     <li>💡 ${recommendation}</li>
                     <li>📈 Traffic distribution: US (${Math.round(trafficData.US.total/1000)}k), China (${Math.round(trafficData.China.total/1000)}k), UK (${Math.round(trafficData.UK.total/1000)}k) daily minutes</li>
                 </ul>
