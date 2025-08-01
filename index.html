@@ -1297,11 +1297,16 @@
         const apiKey = document.getElementById('apiKey').value;
         const model = document.getElementById('model').value;
         
+        console.log('API Key:', apiKey ? 'Present' : 'Missing');
+        console.log('Model:', model);
+        
         if (!apiKey || !model) {
+            console.log('Using fallback - missing API key or model');
             return generateFallbackSummary(analysisData);
         }
         
         try {
+            console.log('Making API call to Gemini...');
             const prompt = `You are a telecommunications expert analyzing VoIP and PSTN traffic data. 
 
 COMPARISON DATA:
@@ -1354,6 +1359,8 @@ Write in simple, clear language that a network engineer can understand. Focus on
             const data = await response.json();
             const aiResponse = data.candidates[0].content.parts[0].text;
             
+            console.log('AI Response:', aiResponse); // Debug log
+            
             return `
                 <div class="ai-summary">
                     <h3>🤖 AI Analysis Summary</h3>
@@ -1375,7 +1382,8 @@ Write in simple, clear language that a network engineer can understand. Focus on
                             <div class="stat-label">Efficiency Ratio</div>
                         </div>
                     </div>
-                    <div class="ai-content">
+                    <div class="ai-content" style="border: 2px solid #1976d2; background: linear-gradient(135deg, #f0f8ff, #e6f3ff);">
+                        <h4 style="color: #1976d2; margin-bottom: 15px;">🤖 AI-Generated Analysis:</h4>
                         ${aiResponse}
                     </div>
                 </div>
