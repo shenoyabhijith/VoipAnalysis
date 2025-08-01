@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>PSTN & VoIP Traffic Lab</title>
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+   <style>
+       * {
+           margin: 0;
+           padding: 0;
+           box-sizing: border-box;
+       }
+
+       body {
+           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+           color: #333;
+           line-height: 1.6;
+           min-height: 100vh;
+       }
+
+       .container {
+           max-width: 1280px;
+           margin: 0 auto;
+           padding: 20px;
+       }
+
+       header {
+           text-align: center;
+           margin-bottom: 40px;
+           padding: 30px 0;
+           background: rgba(255, 255, 255, 0.95);
+           border-radius: 20px;
+           backdrop-filter: blur(10px);
+           box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+       }
+
+       h1 {
+           background: linear-gradient(45deg, #1976d2, #42a5f5);
+           -webkit-background-clip: text;
+           -webkit-text-fill-color: transparent;
+           background-clip: text;
+           font-size: 3em;
+           font-weight: 700;
+           letter-spacing: -1px;
+           text-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+       }
+
+       .subtitle {
+           color: #666;
+           font-size: 1.2em;
+           margin-top: 10px;
+           font-weight: 300;
+       }
+
+       .controls {
+           background: rgba(255, 255, 255, 0.95);
+           padding: 35px;
+           border-radius: 20px;
+           margin-bottom: 30px;
+           backdrop-filter: blur(10px);
+           box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+           border: 1px solid rgba(255, 255, 255, 0.2);
+       }
+
+       .control-grid {
+           display: grid;
+           grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+           gap: 25px;
+           margin-bottom: 30px;
+       }
+
+       .control-group {
+           display: flex;
+           flex-direction: column;
+           gap: 10px;
+       }
+
+       .control-group label {
+           font-weight: 600;
+           color: #1976d2;
+           font-size: 1.1em;
+           display: flex;
+           align-items: center;
+           gap: 8px;
+       }
+
+       .control-group label::before {
+           content: "▶";
+           font-size: 0.8em;
+           color: #42a5f5;
+       }
+
+       .radio-group {
+           display: flex;
+           gap: 20px;
+           flex-wrap: wrap;
+       }
+
+       .radio-item {
+           display: flex;
+           align-items: center;
+           gap: 8px;
+           padding: 12px 20px;
+           border: 2px solid #e3f2fd;
+           border-radius: 25px;
+           cursor: pointer;
+           transition: all 0.3s ease;
+           background: white;
+       }
+
+       .radio-item:hover {
+           border-color: #1976d2;
+           transform: translateY(-2px);
+           box-shadow: 0 5px 15px rgba(25, 118, 210, 0.2);
+       }
+
+       .radio-item input[type="radio"]:checked + label {
+           color: white;
+       }
+
+       .radio-item:has(input[type="radio"]:checked) {
+           background: linear-gradient(45deg, #1976d2, #42a5f5);
+           border-color: #1976d2;
+           color: white;
+       }
+
+       input[type="radio"] {
+           margin: 0;
+           accent-color: #1976d2;
+       }
+
+       select, input[type="number"], input[type="password"] {
+           padding: 15px 20px;
+           border: 2px solid #e3f2fd;
+           border-radius: 15px;
+           font-size: 16px;
+           background: white;
+           transition: all 0.3s ease;
+           box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+       }
+
+       select:focus, input:focus {
+           outline: none;
+           border-color: #1976d2;
+           transform: translateY(-2px);
+           box-shadow: 0 5px 20px rgba(25, 118, 210, 0.2);
+       }
+
+       select:disabled {
+           background-color: #f5f5f5;
+           color: #999;
+           cursor: not-allowed;
+           transform: none;
+       }
+
+       .buttons {
+           display: flex;
+           gap: 20px;
+           justify-content: center;
+           flex-wrap: wrap;
+           margin-top: 30px;
+       }
+
+       button {
+           padding: 15px 30px;
+           border: none;
+           border-radius: 25px;
+           cursor: pointer;
+           font-size: 16px;
+           font-weight: 600;
+           transition: all 0.3s ease;
+           position: relative;
+           overflow: hidden;
+           min-width: 150px;
+       }
+
+       button::before {
+           content: '';
+           position: absolute;
+           top: 0;
+           left: -100%;
+           width: 100%;
+           height: 100%;
+           background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+           transition: left 0.5s;
+       }
+
+       button:hover::before {
+           left: 100%;
+       }
+
+       .btn-primary {
+           background: linear-gradient(45deg, #1976d2, #42a5f5);
+           color: white;
+           box-shadow: 0 5px 20px rgba(25, 118, 210, 0.3);
+       }
+
+       .btn-primary:hover {
+           transform: translateY(-3px);
+           box-shadow: 0 10px 30px rgba(25, 118, 210, 0.4);
+       }
+
+       .btn-primary:disabled {
+           background: #ccc;
+           cursor: not-allowed;
+           transform: none;
+           box-shadow: none;
+       }
+
+       .btn-secondary {
+           background: linear-gradient(45deg, #eceff1, #cfd8dc);
+           color: #333;
+           box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+       }
+
+       .btn-secondary:hover {
+           transform: translateY(-3px);
+           box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+       }
+
+       .btn-secondary:disabled {
+           background: #f5f5f5;
+           cursor: not-allowed;
+           transform: none;
+           box-shadow: none;
+       }
+
+       #results {
+           margin-top: 30px;
+       }
+
+       .result-card {
+           background: rgba(255, 255, 255, 0.95);
+           border-radius: 20px;
+           margin-bottom: 25px;
+           padding: 30px;
+           backdrop-filter: blur(10px);
+           box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+           border: 1px solid rgba(255, 255, 255, 0.2);
+           position: relative;
+           overflow: hidden;
+       }
+
+       .result-card::before {
+           content: '';
+           position: absolute;
+           top: 0;
+           left: 0;
+           right: 0;
+           height: 4px;
+           background: linear-gradient(45deg, #1976d2, #42a5f5);
+       }
+
+       .result-header {
+           display: flex;
+           justify-content: space-between;
+           align-items: center;
+           margin-bottom: 20px;
+           padding-bottom: 15px;
+           border-bottom: 2px solid #e3f2fd;
+       }
+
+       .result-title {
+           font-size: 1.5em;
+           background: linear-gradient(45deg, #1976d2, #42a5f5);
+           -webkit-background-clip: text;
+           -webkit-text-fill-color: transparent;
+           background-clip: text;
+           font-weight: 600;
+       }
+
+       .result-timestamp {
+           color: #666;
+           font-size: 0.9em;
+           background: #e3f2fd;
+           padding: 5px 15px;
+           border-radius: 15px;
+       }
+
+       .result-checkbox {
+           margin-left: 15px;
+           transform: scale(1.3);
+           accent-color: #1976d2;
+       }
+
+       .snapshot-count {
+           position: fixed;
+           top: 20px;
+           right: 20px;
+           background: linear-gradient(45deg, #1976d2, #42a5f5);
+           color: white;
+           padding: 10px 20px;
+           border-radius: 25px;
+           font-weight: 600;
+           box-shadow: 0 5px 20px rgba(25, 118, 210, 0.3);
+           z-index: 1000;
+       }
+
+       table {
+           width: 100%;
+           border-collapse: collapse;
+           margin: 20px 0;
+           background: white;
+           border-radius: 15px;
+           overflow: hidden;
+           box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+       }
+
+       th, td {
+           padding: 15px;
+           text-align: left;
+           border-bottom: 1px solid #e3f2fd;
+       }
+
+       th {
+           background: linear-gradient(45deg, #1976d2, #42a5f5);
+           color: white;
+           font-weight: 600;
+           text-transform: uppercase;
+           letter-spacing: 0.5px;
+           font-size: 0.9em;
+       }
+
+       tr:hover {
+           background: #f8f9ff;
+       }
+
+       .number {
+           font-family: 'Courier New', monospace;
+           text-align: right;
+           font-weight: 600;
+           color: #1976d2;
+       }
+
+       .comparison-container {
+           display: grid;
+           grid-template-columns: 1fr 1fr;
+           gap: 30px;
+           margin-top: 25px;
+       }
+
+       .chart-container {
+           grid-column: 1 / -1;
+           margin-top: 30px;
+           background: white;
+           border-radius: 15px;
+           padding: 20px;
+           box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+       }
+
+       .ai-summary {
+           background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+           border-radius: 15px;
+           padding: 25px;
+           margin-top: 20px;
+           border-left: 5px solid #1976d2;
+       }
+
+       .ai-summary h3 {
+           color: #1976d2;
+           margin-bottom: 15px;
+           font-size: 1.3em;
+       }
+
+       .stats-grid {
+           display: grid;
+           grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+           gap: 15px;
+           margin: 15px 0;
+       }
+
+       .stat-card {
+           background: white;
+           padding: 15px;
+           border-radius: 10px;
+           text-align: center;
+           box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+       }
+
+       .stat-value {
+           font-size: 1.8em;
+           font-weight: 700;
+           color: #1976d2;
+           font-family: 'Courier New', monospace;
+       }
+
+       .stat-label {
+           font-size: 0.9em;
+           color: #666;
+           margin-top: 5px;
+       }
+
+       .error-message {
+           background: linear-gradient(45deg, #f44336, #e57373);
+           color: white;
+           padding: 15px 25px;
+           border-radius: 15px;
+           margin: 15px 0;
+           font-weight: 500;
+           box-shadow: 0 5px 20px rgba(244, 67, 54, 0.3);
+           animation: shake 0.5s ease-in-out;
+       }
+
+       @keyframes shake {
+           0%, 100% { transform: translateX(0); }
+           25% { transform: translateX(-5px); }
+           75% { transform: translateX(5px); }
+       }
+
+       @media (max-width: 768px) {
+           .control-grid {
+               grid-template-columns: 1fr;
+           }
+
+           .buttons {
+               justify-content: center;
+           }
+
+           .comparison-container {
+               grid-template-columns: 1fr;
+           }
+
+           h1 {
+               font-size: 2.2em;
+           }
+
+           .snapshot-count {
+               position: relative;
+               top: auto;
+               right: auto;
+               margin-bottom: 20px;
+               display: inline-block;
+           }
+       }
+
+       .pulse {
+           animation: pulse 2s infinite;
+       }
+
+       @keyframes pulse {
+           0% { transform: scale(1); }
+           50% { transform: scale(1.05); }
+           100% { transform: scale(1); }
+       }
+
+       .glow {
+           box-shadow: 0 0 20px rgba(25, 118, 210, 0.5);
+       }
+   </style>
+</head>
+<body>
+   <div class="snapshot-count" id="snapshotCount">Snapshots: 0/2</div>
+   
+   <div class="container">
+       <header>
+           <h1>PSTN & VoIP Traffic Lab</h1>
+           <div class="subtitle">Advanced Telecommunications Traffic Analysis Platform</div>
+       </header>
+
+       <div class="controls">
+           <div class="control-grid">
+               <div class="control-group">
+                   <label>Network Type</label>
+                   <div class="radio-group">
+                       <div class="radio-item">
+                           <input type="radio" id="pstn" name="networkType" value="PSTN" checked>
+                           <label for="pstn">PSTN</label>
+                       </div>
+                       <div class="radio-item">
+                           <input type="radio" id="voip" name="networkType" value="VoIP">
+                           <label for="voip">VoIP</label>
+                       </div>
+                   </div>
+               </div>
+
+               <div class="control-group">
+                   <label for="codec">Codec Selection</label>
+                   <select id="codec" disabled>
+                       <option value="G.711">G.711 (64 kbps)</option>
+                       <option value="G.729a">G.729a (8 kbps)</option>
+                       <option value="G.722">G.722 (64 kbps)</option>
+                       <option value="Opus">Opus (32 kbps)</option>
+                   </select>
+               </div>
+
+               <div class="control-group">
+                   <label for="blocking">Blocking Probability</label>
+                   <input type="number" id="blocking" min="0.001" max="0.1" step="0.001" value="0.01">
+               </div>
+
+               <div class="control-group">
+                   <label for="apiKey">Gemini API Key</label>
+                   <input type="password" id="apiKey" placeholder="Enter your Gemini API key">
+                   <div style="margin-top: 8px;">
+                       <input type="checkbox" id="saveApiKey" checked>
+                       <label for="saveApiKey" style="font-size: 0.9em; color: #666; margin-left: 5px;">Save API key for future use</label>
+                   </div>
+               </div>
+
+               <div class="control-group">
+                   <label for="model">Gemini Model</label>
+                   <select id="model">
+                       <option value="">Loading models...</option>
+                   </select>
+               </div>
+           </div>
+
+           <div class="buttons">
+               <button class="btn-primary" id="runBtn" onclick="runAnalysis()">🚀 Run Analysis</button>
+               <button class="btn-secondary" id="clearBtn" onclick="clearSnapshots()" disabled>🗑️ Clear Snapshots</button>
+               <button class="btn-secondary" id="compareBtn" onclick="compareSelected()" disabled>📊 Compare Selected</button>
+           </div>
+       </div>
+
+       <section id="results"></section>
+   </div>
+
+   <script>
+       // Global variables
+       let snapshots = [];
+       let resultCounter = 0;
+
+       // Traffic data (daily minutes)
+       const trafficData = {
+           'US': { total: 12822, destinations: { 'China': 6411, 'UK': 6411 } },
+           'China': { total: 28286, destinations: { 'US': 14143, 'UK': 14143 } },
+           'UK': { total: 28000, destinations: { 'US': 14000, 'China': 14000 } }
+       };
+
+       // Codec data (kbps)
+       const codecData = {
+           'G.711': 64,
+           'G.729a': 8,
+           'G.722': 64,
+           'Opus': 32
+       };
+
+       // Initialize
+       document.addEventListener('DOMContentLoaded', function() {
+           loadStoredData();
+           setupEventListeners();
+           loadGeminiModels();
+           updateUI();
+       });
+
+       function loadStoredData() {
+           const apiKey = localStorage.getItem('gemini_api_key');
+           const model = localStorage.getItem('gemini_model');
+           const saveApiKey = localStorage.getItem('save_api_key');
+           
+           if (apiKey) document.getElementById('apiKey').value = apiKey;
+           if (model) document.getElementById('model').value = model;
+           if (saveApiKey !== null) {
+               document.getElementById('saveApiKey').checked = saveApiKey === 'true';
+           }
+       }
+
+       function setupEventListeners() {
+           document.querySelectorAll('input[name="networkType"]').forEach(radio => {
+               radio.addEventListener('change', function() {
+                   document.getElementById('codec').disabled = this.value === 'PSTN';
+               });
+           });
+
+           document.getElementById('apiKey').addEventListener('change', function() {
+               if (document.getElementById('saveApiKey').checked) {
+                   localStorage.setItem('gemini_api_key', this.value);
+               } else {
+                   localStorage.removeItem('gemini_api_key');
+               }
+           });
+
+           document.getElementById('saveApiKey').addEventListener('change', function() {
+               if (this.checked) {
+                   // Save current API key if checkbox is checked
+                   const apiKey = document.getElementById('apiKey').value;
+                   if (apiKey) {
+                       localStorage.setItem('gemini_api_key', apiKey);
+                   }
+               } else {
+                   // Remove API key from storage if checkbox is unchecked
+                   localStorage.removeItem('gemini_api_key');
+               }
+               localStorage.setItem('save_api_key', this.checked.toString());
+           });
+
+           document.getElementById('model').addEventListener('change', function() {
+               localStorage.setItem('gemini_model', this.value);
+           });
+
+           // Add event listener for checkboxes
+           document.addEventListener('change', function(e) {
+               if (e.target.classList.contains('result-checkbox')) {
+                   handleCheckboxChange(e.target);
+               }
+           });
+       }
+
+       function handleCheckboxChange(checkbox) {
+           const checkedBoxes = document.querySelectorAll('.result-checkbox:checked');
+           
+           // Auto-select when we have exactly 2 snapshots
+           if (snapshots.length === 2 && checkedBoxes.length === 0) {
+               document.querySelectorAll('.result-checkbox').forEach(cb => cb.checked = true);
+               updateUI();
+               return;
+           }
+           
+           // Limit to 2 selections
+           if (checkedBoxes.length > 2) {
+               checkbox.checked = false;
+               showError('Only 2 snapshots can be selected for comparison.');
+               return;
+           }
+           
+           updateUI();
+       }
+
+       function updateUI() {
+           const snapshotCount = snapshots.length;
+           const checkedBoxes = document.querySelectorAll('.result-checkbox:checked');
+           
+           // Update snapshot counter
+           document.getElementById('snapshotCount').textContent = `Snapshots: ${snapshotCount}/2`;
+           
+           // Update button states
+           document.getElementById('runBtn').disabled = snapshotCount >= 2;
+           document.getElementById('clearBtn').disabled = snapshotCount === 0;
+           document.getElementById('compareBtn').disabled = checkedBoxes.length !== 2;
+           
+           // Auto-select when we have exactly 2 snapshots
+           if (snapshotCount === 2 && checkedBoxes.length === 0) {
+               document.querySelectorAll('.result-checkbox').forEach(cb => cb.checked = true);
+               document.getElementById('compareBtn').disabled = false;
+           }
+           
+           // Add visual feedback
+           if (snapshotCount >= 2) {
+               document.getElementById('runBtn').textContent = '⛔ Analysis Limit Reached';
+               document.getElementById('snapshotCount').classList.add('pulse');
+           } else {
+               document.getElementById('runBtn').textContent = '🚀 Run Analysis';
+               document.getElementById('snapshotCount').classList.remove('pulse');
+           }
+       }
+
+       function showError(message) {
+           const existingError = document.querySelector('.error-message');
+           if (existingError) existingError.remove();
+           
+           const errorDiv = document.createElement('div');
+           errorDiv.className = 'error-message';
+           errorDiv.textContent = message;
+           
+           document.querySelector('.controls').appendChild(errorDiv);
+           
+           setTimeout(() => errorDiv.remove(), 5000);
+       }
+
+       async function loadGeminiModels() {
+           const modelSelect = document.getElementById('model');
+           const models = [
+               'gemini-1.5-flash',
+               'gemini-1.5-pro',
+               'gemini-1.0-pro'
+           ];
+           
+           modelSelect.innerHTML = '';
+           models.forEach(model => {
+               const option = document.createElement('option');
+               option.value = model;
+               option.textContent = model;
+               modelSelect.appendChild(option);
+           });
+
+           const storedModel = localStorage.getItem('gemini_model');
+           if (storedModel) modelSelect.value = storedModel;
+       }
+
+       // Erlang B calculation
+       function erlangB(traffic, circuits) {
+           if (circuits === 0) return 1;
+           
+           let numerator = Math.pow(traffic, circuits) / factorial(circuits);
+           let denominator = 0;
+           
+           for (let i = 0; i <= circuits; i++) {
+               denominator += Math.pow(traffic, i) / factorial(i);
+           }
+           
+           return numerator / denominator;
+       }
+
+       function factorial(n) {
+           if (n <= 1) return 1;
+           let result = 1;
+           for (let i = 2; i <= n; i++) {
+               result *= i;
+           }
+           return result;
+       }
+
+       function findCircuits(traffic, blockingProb) {
+           let circuits = Math.ceil(traffic);
+           
+           while (erlangB(traffic, circuits) > blockingProb) {
+               circuits++;
+               if (circuits > 1000) break;
+           }
+           
+           return circuits;
+       }
+
+       function calculatePSTN(traffic, blockingProb) {
+           const circuits = findCircuits(traffic, blockingProb);
+           const t1Count = Math.ceil(circuits / 24);
+           const bandwidth = t1Count * 1.544;
+           
+           return {
+               circuits,
+               t1Count,
+               bandwidth,
+               actualBlocking: erlangB(traffic, circuits)
+           };
+       }
+
+       function calculateVoIP(traffic, codec) {
+           const codecRate = codecData[codec];
+           const headerOverhead = 40 * 8 * 50 / 1000;
+           const totalPerCall = codecRate + headerOverhead;
+           const totalBandwidth = traffic * totalPerCall / 1000;
+           
+           return {
+               codecRate,
+               headerOverhead,
+               totalPerCall,
+               totalBandwidth
+           };
+       }
+
+       function runAnalysis() {
+           if (snapshots.length >= 2) {
+               showError('Maximum 2 snapshots allowed. Please clear existing snapshots first.');
+               return;
+           }
+
+           const networkType = document.querySelector('input[name="networkType"]:checked').value;
+           const codec = document.getElementById('codec').value;
+           const blockingProb = parseFloat(document.getElementById('blocking').value);
+           
+           // Check for duplicate analysis with same protocol and blocking probability
+           const isDuplicate = snapshots.some(snapshot => {
+               if (networkType === 'PSTN') {
+                   return snapshot.type === 'PSTN' && snapshot.blocking === blockingProb;
+               } else {
+                   return snapshot.type === 'VoIP' && snapshot.codec === codec;
+               }
+           });
+           
+           if (isDuplicate) {
+               const errorMsg = networkType === 'PSTN' 
+                   ? `Analysis with ${networkType} and ${(blockingProb * 100).toFixed(1)}% blocking probability already exists. Please use a different blocking probability.`
+                   : `Analysis with ${networkType} and ${codec} codec already exists. Please use a different codec.`;
+               showError(errorMsg);
+               return;
+           }
+           
+           resultCounter++;
+           const resultId = `result_${resultCounter}`;
+           const timestamp = new Date().toLocaleString();
+           
+           // Calculate busy hour Erlangs for each location
+           const results = {};
+           
+           Object.keys(trafficData).forEach(location => {
+               const dailyMinutes = trafficData[location].total;
+               const busyHourErlangs = (dailyMinutes * 0.17) / 60;
+               
+               if (networkType === 'PSTN') {
+                   results[location] = {
+                       ...calculatePSTN(busyHourErlangs, blockingProb),
+                       erlangs: busyHourErlangs
+                   };
+               } else {
+                   results[location] = {
+                       ...calculateVoIP(busyHourErlangs, codec),
+                       erlangs: busyHourErlangs
+                   };
+               }
+           });
+           
+           // Store snapshot
+           const snapshot = {
+               id: resultId,
+               timestamp,
+               type: networkType,
+               codec: networkType === 'VoIP' ? codec : null,
+               blocking: networkType === 'PSTN' ? blockingProb : null,
+               trafficData: results
+           };
+           
+           snapshots.push(snapshot);
+           displayResult(snapshot);
+           updateUI();
+       }
+
+       function displayResult(snapshot) {
+           const resultsSection = document.getElementById('results');
+           
+           const resultCard = document.createElement('div');
+           resultCard.className = 'result-card';
+           resultCard.innerHTML = `
+               <div class="result-header">
+                   <span class="result-title">${snapshot.type} Analysis - ${snapshot.id}</span>
+                   <div>
+                       <span class="result-timestamp">${snapshot.timestamp}</span>
+                       <input type="checkbox" class="result-checkbox" data-id="${snapshot.id}">
+                   </div>
+               </div>
+               ${generateResultTable(snapshot)}
+               ${generateStatsCards(snapshot)}
+           `;
+           
+           resultsSection.appendChild(resultCard);
+           
+           // Animate the new result
+           anime({
+               targets: resultCard,
+               opacity: [0, 1],
+               translateY: [50, 0],
+               scale: [0.9, 1],
+               duration: 800,
+               easing: 'easeOutElastic(1, .8)'
+           });
+       }
+
+       function generateStatsCards(snapshot) {
+           const stats = calculateSummaryStats(snapshot);
+           
+           let html = '<div class="stats-grid">';
+           stats.forEach(stat => {
+               html += `
+                   <div class="stat-card">
+                       <div class="stat-value">${stat.value}</div>
+                       <div class="stat-label">${stat.label}</div>
+                   </div>
+               `;
+           });
+           html += '</div>';
+           
+           return html;
+       }
+
+       function calculateSummaryStats(snapshot) {
+           const stats = [];
+           const locations = Object.keys(snapshot.trafficData);
+           
+           // Total Erlangs
+           const totalErlangs = locations.reduce((sum, loc) => sum + snapshot.trafficData[loc].erlangs, 0);
+           stats.push({ value: totalErlangs.toFixed(1), label: 'Total Erlangs' });
+           
+           if (snapshot.type === 'PSTN') {
+               const totalCircuits = locations.reduce((sum, loc) => sum + snapshot.trafficData[loc].circuits, 0);
+               const totalT1s = locations.reduce((sum, loc) => sum + snapshot.trafficData[loc].t1Count, 0);
+               const totalBandwidth = locations.reduce((sum, loc) => sum + snapshot.trafficData[loc].bandwidth, 0);
+               
+               stats.push({ value: totalCircuits.toString(), label: 'Total Circuits' });
+               stats.push({ value: totalT1s.toString(), label: 'Total T-1s' });
+               stats.push({ value: totalBandwidth.toFixed(1) + ' Mbps', label: 'Total Bandwidth' });
+           } else {
+               const totalBandwidth = locations.reduce((sum, loc) => sum + snapshot.trafficData[loc].totalBandwidth, 0);
+               const avgPerCall = locations.reduce((sum, loc) => sum + snapshot.trafficData[loc].totalPerCall, 0) / locations.length;
+               
+               stats.push({ value: totalBandwidth.toFixed(1) + ' Mbps', label: 'Total Bandwidth' });
+               stats.push({ value: avgPerCall.toFixed(1) + ' kbps', label: 'Avg Per Call' });
+               stats.push({ value: snapshot.codec, label: 'Codec Used' });
+           }
+           
+           return stats;
+       }
+
+       function generateResultTable(snapshot) {
+           let html = '<table><thead><tr><th>Location</th><th>Daily Minutes</th><th>Busy Hour Erlangs</th>';
+           
+           if (snapshot.type === 'PSTN') {
+               html += '<th>Circuits</th><th>T-1 Count</th><th>Bandwidth (Mbps)</th><th>Actual Blocking</th>';
+           } else {
+               html += '<th>Codec Rate (kbps)</th><th>Header Overhead (kbps)</th><th>Total per Call (kbps)</th><th>Total Bandwidth (Mbps)</th>';
+           }
+           
+           html += '</tr></thead><tbody>';
+           
+           Object.keys(snapshot.trafficData).forEach(location => {
+               const data = snapshot.trafficData[location];
+               const dailyMinutes = trafficData[location].total;
+               
+               html += `<tr>
+                   <td><strong>${location}</strong></td>
+                   <td class="number">${dailyMinutes.toLocaleString()}</td>
+                   <td class="number">${data.erlangs.toFixed(2)}</td>`;
+               
+               if (snapshot.type === 'PSTN') {
+                   html += `
+                       <td class="number">${data.circuits}</td>
+                       <td class="number">${data.t1Count}</td>
+                       <td class="number">${data.bandwidth.toFixed(2)}</td>
+                       <td class="number">${(data.actualBlocking * 100).toFixed(3)}%</td>`;
+               } else {
+                   html += `
+                       <td class="number">${data.codecRate}</td>
+                       <td class="number">${data.headerOverhead.toFixed(2)}</td>
+                       <td class="number">${data.totalPerCall.toFixed(2)}</td>
+                       <td class="number">${data.totalBandwidth.toFixed(2)}</td>`;
+               }
+               
+               html += '</tr>';
+           });
+           
+           html += '</tbody></table>';
+           return html;
+       }
+
+       function clearSnapshots() {
+           snapshots = [];
+           document.getElementById('results').innerHTML = '';
+           updateUI();
+           // Animate the clear action
+        anime({
+            targets: '.snapshot-count',
+            scale: [1, 1.2, 1],
+            duration: 500,
+            easing: 'easeOutBounce'
+        });
+    }
+
+    function compareSelected() {
+        const selectedCheckboxes = document.querySelectorAll('.result-checkbox:checked');
+        if (selectedCheckboxes.length !== 2) {
+            showError('Please select exactly 2 results to compare.');
+            return;
+        }
+        
+        const selectedIds = Array.from(selectedCheckboxes).map(cb => cb.dataset.id);
+        const selectedSnapshots = snapshots.filter(s => selectedIds.includes(s.id));
+        
+        // Allow comparison of same protocol with different parameters
+        const [snap1, snap2] = selectedSnapshots;
+        
+        // Check if both snapshots have the same protocol AND same parameters
+        if (snap1.type === snap2.type) {
+            if (snap1.type === 'PSTN') {
+                if (snap1.blocking === snap2.blocking) {
+                    showError('Cannot compare PSTN analyses with the same blocking probability. Please select analyses with different blocking probabilities.');
+                    return;
+                }
+            } else { // VoIP
+                if (snap1.codec === snap2.codec) {
+                    showError('Cannot compare VoIP analyses with the same codec. Please select analyses with different codecs.');
+                    return;
+                }
+            }
+        }
+        
+        displayComparison(selectedSnapshots);
+    }
+
+    function displayComparison(snapshots) {
+        const resultsSection = document.getElementById('results');
+        
+        const comparisonCard = document.createElement('div');
+        comparisonCard.className = 'result-card';
+        comparisonCard.innerHTML = `
+            <div class="result-header">
+                <span class="result-title">📊 Comparison Analysis: ${snapshots[0].id} vs ${snapshots[1].id}</span>
+                <span class="result-timestamp">${new Date().toLocaleString()}</span>
+            </div>
+            ${generateComparisonContent(snapshots)}
+            ${generateAISummary(snapshots)}
+        `;
+        
+        resultsSection.appendChild(comparisonCard);
+        
+        // Animate the comparison
+        anime({
+            targets: comparisonCard,
+            opacity: [0, 1],
+            translateY: [50, 0],
+            scale: [0.95, 1],
+            duration: 1000,
+            easing: 'easeOutElastic(1, .6)'
+        });
+    }
+
+    function generateComparisonContent(snapshots) {
+        const [snap1, snap2] = snapshots;
+        
+        let html = '<div class="comparison-container">';
+        
+        // Side by side tables
+        html += `<div><h3>📞 ${snap1.type} - ${snap1.id}</h3>${generateResultTable(snap1)}</div>`;
+        html += `<div><h3>💻 ${snap2.type} - ${snap2.id}</h3>${generateResultTable(snap2)}</div>`;
+        
+        html += '</div>';
+        
+        // Comparison stats
+        html += generateComparisonStats(snapshots);
+        
+        // Bar chart
+        html += '<div class="chart-container">';
+        html += generateComparisonChart(snapshots);
+        html += '</div>';
+        
+        return html;
+    }
+
+    function generateComparisonStats(snapshots) {
+        const [snap1, snap2] = snapshots;
+        const locations = Object.keys(snap1.trafficData);
+        
+        let html = '<div class="stats-grid">';
+        
+        // Calculate key metrics
+        const totalErlangs1 = locations.reduce((sum, loc) => sum + snap1.trafficData[loc].erlangs, 0);
+        const totalErlangs2 = locations.reduce((sum, loc) => sum + snap2.trafficData[loc].erlangs, 0);
+        
+        let totalBandwidth1, totalBandwidth2;
+        
+        if (snap1.type === 'PSTN') {
+            totalBandwidth1 = locations.reduce((sum, loc) => sum + snap1.trafficData[loc].bandwidth, 0);
+        } else {
+            totalBandwidth1 = locations.reduce((sum, loc) => sum + snap1.trafficData[loc].totalBandwidth, 0);
+        }
+        
+        if (snap2.type === 'PSTN') {
+            totalBandwidth2 = locations.reduce((sum, loc) => sum + snap2.trafficData[loc].bandwidth, 0);
+        } else {
+            totalBandwidth2 = locations.reduce((sum, loc) => sum + snap2.trafficData[loc].totalBandwidth, 0);
+        }
+        
+        const bandwidthDiff = ((totalBandwidth2 - totalBandwidth1) / totalBandwidth1 * 100);
+        const bandwidthDiffText = bandwidthDiff > 0 ? `+${bandwidthDiff.toFixed(1)}%` : `${bandwidthDiff.toFixed(1)}%`;
+        
+        html += `
+            <div class="stat-card">
+                <div class="stat-value">${totalBandwidth1.toFixed(1)}</div>
+                <div class="stat-label">${snap1.type} Bandwidth (Mbps)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">${totalBandwidth2.toFixed(1)}</div>
+                <div class="stat-label">${snap2.type} Bandwidth (Mbps)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" style="color: ${bandwidthDiff > 0 ? '#f44336' : '#4caf50'}">${bandwidthDiffText}</div>
+                <div class="stat-label">Bandwidth Difference</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">${(totalBandwidth1 / totalBandwidth2).toFixed(2)}x</div>
+                <div class="stat-label">Efficiency Ratio</div>
+            </div>
+        `;
+        
+        html += '</div>';
+        return html;
+    }
+
+    function generateAISummary(snapshots) {
+        const [snap1, snap2] = snapshots;
+        const locations = Object.keys(snap1.trafficData);
+        
+        // Calculate key metrics for summary
+        let totalBandwidth1 = 0, totalBandwidth2 = 0;
+        let totalCircuits = 0, totalT1s = 0;
+        
+        locations.forEach(loc => {
+            if (snap1.type === 'PSTN') {
+                totalBandwidth1 += snap1.trafficData[loc].bandwidth;
+                totalCircuits += snap1.trafficData[loc].circuits;
+                totalT1s += snap1.trafficData[loc].t1Count;
+            } else {
+                totalBandwidth1 += snap1.trafficData[loc].totalBandwidth;
+            }
+            
+            if (snap2.type === 'PSTN') {
+                totalBandwidth2 += snap2.trafficData[loc].bandwidth;
+            } else {
+                totalBandwidth2 += snap2.trafficData[loc].totalBandwidth;
+            }
+        });
+        
+        const bandwidthRatio = totalBandwidth1 / totalBandwidth2;
+        const efficiency = bandwidthRatio > 1 ? 'PSTN requires more bandwidth' : 'VoIP requires more bandwidth';
+        const recommendation = bandwidthRatio > 1 ? 'VoIP recommended for bandwidth efficiency' : 'PSTN may be more suitable for reliability';
+        
+        return `
+            <div class="ai-summary">
+                <h3>🤖 AI Analysis Summary</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value">${Math.abs(((totalBandwidth2 - totalBandwidth1) / totalBandwidth1 * 100)).toFixed(0)}%</div>
+                        <div class="stat-label">Bandwidth Difference</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${totalCircuits || 'N/A'}</div>
+                        <div class="stat-label">PSTN Circuits Required</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${snap2.codec || 'N/A'}</div>
+                        <div class="stat-label">VoIP Codec Used</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${bandwidthRatio.toFixed(2)}x</div>
+                        <div class="stat-label">Efficiency Ratio</div>
+                    </div>
+                </div>
+                <p><strong>Key Findings:</strong></p>
+                <ul>
+                    <li>📊 ${efficiency} (${Math.abs(bandwidthRatio - 1).toFixed(2)}x difference)</li>
+                    <li>🔧 PSTN requires ${totalT1s} T-1 circuits across all locations</li>
+                    <li>💡 ${recommendation}</li>
+                    <li>📈 Traffic distribution: US (${Math.round(trafficData.US.total/1000)}k), China (${Math.round(trafficData.China.total/1000)}k), UK (${Math.round(trafficData.UK.total/1000)}k) daily minutes</li>
+                </ul>
+            </div>
+        `;
+    }
+
+    function generateComparisonChart(snapshots) {
+        const [snap1, snap2] = snapshots;
+        const locations = Object.keys(snap1.trafficData);
+        
+        let svg = '<svg width="100%" height="500" viewBox="0 0 900 500">';
+        
+        // Chart title with gradient
+        svg += '<defs>';
+        svg += '<linearGradient id="titleGradient" x1="0%" y1="0%" x2="100%" y2="0%">';
+        svg += '<stop offset="0%" style="stop-color:#1976d2;stop-opacity:1" />';
+        svg += '<stop offset="100%" style="stop-color:#42a5f5;stop-opacity:1" />';
+        svg += '</linearGradient>';
+        svg += '</defs>';
+        
+        svg += '<text x="450" y="40" text-anchor="middle" font-size="24" font-weight="bold" fill="url(#titleGradient)">Bandwidth Comparison Analysis</text>';
+        
+        // Legend with improved styling
+        svg += '<rect x="100" y="60" width="20" height="20" fill="#1976d2" rx="3"/>';
+        svg += `<text x="130" y="75" font-size="14" font-weight="600">${snap1.id} (${snap1.type})</text>`;
+        svg += '<rect x="300" y="60" width="20" height="20" fill="#42a5f5" rx="3"/>';
+        svg += `<text x="330" y="75" font-size="14" font-weight="600">${snap2.id} (${snap2.type})</text>`;
+        
+        // Chart area background
+        svg += '<rect x="80" y="100" width="740" height="320" fill="#f8f9ff" stroke="#e3f2fd" stroke-width="2" rx="10"/>';
+        
+        // Bars
+        const barWidth = 80;
+        const spacing = 180;
+        const startX = 150;
+        const startY = 400;
+        const maxHeight = 280;
+        
+        // Find max value for scaling
+        let maxValue = 0;
+        locations.forEach(location => {
+            const val1 = snap1.type === 'PSTN' ? snap1.trafficData[location].bandwidth : snap1.trafficData[location].totalBandwidth;
+            const val2 = snap2.type === 'PSTN' ? snap2.trafficData[location].bandwidth : snap2.trafficData[location].totalBandwidth;
+            maxValue = Math.max(maxValue, val1, val2);
+        });
+        
+        locations.forEach((location, index) => {
+            const x = startX + index * spacing;
+            const val1 = snap1.type === 'PSTN' ? snap1.trafficData[location].bandwidth : snap1.trafficData[location].totalBandwidth;
+            const val2 = snap2.type === 'PSTN' ? snap2.trafficData[location].bandwidth : snap2.trafficData[location].totalBandwidth;
+            
+            const height1 = (val1 / maxValue) * maxHeight;
+            const height2 = (val2 / maxValue) * maxHeight;
+            
+            // Bar 1 with gradient
+            svg += '<defs>';
+            svg += `<linearGradient id="grad1_${index}" x1="0%" y1="0%" x2="0%" y2="100%">`;
+            svg += '<stop offset="0%" style="stop-color:#2196f3;stop-opacity:1" />';
+            svg += '<stop offset="100%" style="stop-color:#1976d2;stop-opacity:1" />';
+            svg += '</linearGradient>';
+            svg += '</defs>';
+            
+            svg += `<rect x="${x}" y="${startY - height1}" width="${barWidth}" height="${height1}" fill="url(#grad1_${index})" rx="5"/>`;
+            svg += `<text x="${x + barWidth/2}" y="${startY - height1 - 10}" text-anchor="middle" font-size="12" font-weight="600" fill="#1976d2">${val1.toFixed(1)}</text>`;
+            
+            // Bar 2 with gradient
+            svg += `<linearGradient id="grad2_${index}" x1="0%" y1="0%" x2="0%" y2="100%">`;
+            svg += '<stop offset="0%" style="stop-color:#64b5f6;stop-opacity:1" />';
+            svg += '<stop offset="100%" style="stop-color:#42a5f5;stop-opacity:1" />';
+            svg += '</linearGradient>';
+            
+            svg += `<rect x="${x + barWidth + 15}" y="${startY - height2}" width="${barWidth}" height="${height2}" fill="url(#grad2_${index})" rx="5"/>`;
+            svg += `<text x="${x + barWidth + 15 + barWidth/2}" y="${startY - height2 - 10}" text-anchor="middle" font-size="12" font-weight="600" fill="#42a5f5">${val2.toFixed(1)}</text>`;
+            
+            // Location label with emoji
+            const emoji = location === 'US' ? '🇺🇸' : location === 'China' ? '🇨🇳' : '🇬🇧';
+            svg += `<text x="${x + barWidth + 7}" y="${startY + 25}" text-anchor="middle" font-size="16">${emoji}</text>`;
+            svg += `<text x="${x + barWidth + 7}" y="${startY + 45}" text-anchor="middle" font-size="14" font-weight="600">${location}</text>`;
+        });
+        
+        // Y-axis with grid lines
+        svg += `<line x1="100" y1="120" x2="100" y2="${startY}" stroke="#1976d2" stroke-width="2"/>`;
+        
+        // Grid lines and labels
+        for (let i = 0; i <= 5; i++) {
+            const y = startY - (i * maxHeight / 5);
+            const value = (i * maxValue / 5).toFixed(1);
+            svg += `<line x1="95" y1="${y}" x2="820" y2="${y}" stroke="#e3f2fd" stroke-width="1" stroke-dasharray="5,5"/>`;
+            svg += `<text x="90" y="${y + 5}" text-anchor="end" font-size="12" fill="#666">${value}</text>`;
+        }
+        
+        svg += `<text x="50" y="260" text-anchor="middle" font-size="14" font-weight="600" fill="#1976d2" transform="rotate(-90, 50, 260)">Bandwidth (Mbps)</text>`;
+        
+        svg += '</svg>';
+        
+        return svg;
+    }
+</script>
